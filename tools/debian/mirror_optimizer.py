@@ -3,7 +3,7 @@ import shutil
 from pathlib import Path
 
 from tools.base import Tool
-from utils.sudo_utils import write_file, need_sudo
+from utils.sudo_utils import write_file, copy_file, need_sudo
 from utils.i18n import t
 
 SOURCES_LIST = Path("/etc/apt/sources.list")
@@ -28,7 +28,7 @@ class DebianMirrorOptimizer(Tool):
         backup_path = SOURCES_LIST.with_suffix(SOURCES_LIST.suffix + BACKUP_SUFFIX)
         if backup_path.exists():
             return False
-        shutil.copy2(SOURCES_LIST, backup_path)
+        copy_file(SOURCES_LIST, backup_path)
         return True
 
     def _detect_repo(self, content: str) -> tuple[str, str]:

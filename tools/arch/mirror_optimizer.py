@@ -2,7 +2,7 @@ import shutil
 from pathlib import Path
 
 from tools.base import Tool
-from utils.sudo_utils import write_file, need_sudo
+from utils.sudo_utils import write_file, copy_file, need_sudo
 from utils.i18n import t
 
 MIRRORLIST = Path("/etc/pacman.d/mirrorlist")
@@ -28,7 +28,7 @@ class ArchMirrorOptimizer(Tool):
         backup_path = MIRRORLIST.with_suffix(MIRRORLIST.suffix + BACKUP_SUFFIX)
         if backup_path.exists():
             return False
-        shutil.copy2(MIRRORLIST, backup_path)
+        copy_file(MIRRORLIST, backup_path)
         return True
 
     def restore(self) -> None:
