@@ -17,6 +17,12 @@ DESKTOP_OPTIONS = {
             "packages": ["gnome", "gdm"],
             "service": "gdm",
         },
+        "niri": {
+            "name_key": "msg.de_niri",
+            "packages": ["niri", "xwayland-satellite", "xdg-desktop-portal-gnome"],
+            "service": None,
+            "ppas": [],
+        },
         "sway": {
             "name_key": "msg.de_sway",
             "packages": ["sway", "waybar", "wofi", "foot"],
@@ -33,6 +39,12 @@ DESKTOP_OPTIONS = {
             "name_key": "msg.de_gnome",
             "packages": ["gnome", "gdm3"],
             "service": "gdm3",
+        },
+        "niri": {
+            "name_key": "msg.de_niri",
+            "packages": ["niri"],
+            "service": None,
+            "ppas": ["ppa:avengemedia/danklinux", "ppa:avengemedia/dms"],
         },
         "sway": {
             "name_key": "msg.de_sway",
@@ -93,7 +105,7 @@ def _install_package(pkg: str, distro: str) -> bool:
 class DesktopEnvInstaller(Tool):
     name = "desktop-env"
     display_name = "Desktop Environment"
-    description = "Install a desktop environment (KDE/GNOME/Sway)"
+    description = "Install a desktop environment (KDE/GNOME/Niri/Sway)"
     distros = ["arch", "debian"]
 
     def _show_menu(self, options: dict) -> list[str]:
@@ -128,6 +140,13 @@ class DesktopEnvInstaller(Tool):
         selected_key = keys[idx]
         selected = options[selected_key]
         print(t("msg.selected_desktop", de=t(selected["name_key"])))
+
+        # Add PPAs if needed (Debian/Ubuntu)
+        ppas = selected.get("ppas", [])
+        if ppas and distro != "arch":
+            for ppa in ppas:
+                print(t("msg.adding_ppa", ppa=ppa))
+                _run_verbose(["sudo", "add-apt-repository", "-y", ppa])
 
         if distro != "arch":
             print(t("msg.apt_update"))

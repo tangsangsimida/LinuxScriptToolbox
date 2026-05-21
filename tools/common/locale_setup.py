@@ -242,6 +242,11 @@ class LocaleInitializer(Tool):
             _run_verbose(["git", "-C", str(rime_dir), "pull"])
             return
 
+        # Already has rime-ice files (e.g. rsynced)
+        if rime_dir.exists() and (rime_dir / "rime_ice.schema.yaml").exists():
+            print(t("msg.rime_ice_ready"))
+            return
+
         rime_dir.mkdir(parents=True, exist_ok=True)
         print(t("msg.cloning_rime_ice"))
         code = _run_verbose(["git", "clone", RIME_ICE_URL, str(rime_dir)])
