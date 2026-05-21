@@ -104,6 +104,9 @@ class LocaleInitializer(Tool):
         else:
             _run_verbose(["sudo", "update-locale", "LANG=zh_CN.UTF-8", "LANGUAGE=zh_CN:zh"])
 
+        # Set GNOME desktop region for GUI language
+        _run(["gsettings", "set", "org.gnome.system.locale", "region", "zh_CN.UTF-8"])
+
         print(t("msg.locale_set"))
 
     # --- Fcitx5 + Rime ---
