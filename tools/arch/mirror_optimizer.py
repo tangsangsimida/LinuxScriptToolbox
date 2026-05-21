@@ -3,7 +3,7 @@ from pathlib import Path
 
 from tools.base import Tool
 from utils.sudo_utils import write_file, need_sudo
-from i18n import t
+from utils.i18n import t
 
 MIRRORLIST = Path("/etc/pacman.d/mirrorlist")
 BACKUP_SUFFIX = ".bak"

@@ -6,10 +6,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from distro import detect_distro
-from ui import show_header, show_menu
+from utils.distro import detect_distro
+from utils.ui import show_header, show_menu
 from tools import get_tools_for_distro, TOOLS
-from i18n import t, set_lang, get_lang, SUPPORTED_LANGS
+from utils.i18n import t, set_lang, get_lang, SUPPORTED_LANGS
 
 
 def select_language():
@@ -44,7 +44,7 @@ def main():
             select_language()
         elif choice == "a":
             for tool in tools_to_run:
-                from i18n import tool_display_name
+                from utils.i18n import tool_display_name
                 print(f"\n{t('ui.running', name=tool_display_name(tool))}")
                 tool.run()
             input(f"\n{t('ui.press_enter')}")
@@ -52,7 +52,7 @@ def main():
             try:
                 idx = int(choice) - 1
                 if 0 <= idx < len(tools_to_run):
-                    from i18n import tool_display_name
+                    from utils.i18n import tool_display_name
                     print(f"\n{t('ui.running', name=tool_display_name(tools_to_run[idx]))}")
                     tools_to_run[idx].run()
                     input(f"\n{t('ui.press_enter')}")

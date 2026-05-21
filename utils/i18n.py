@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-CONFIG_PATH = Path(__file__).parent / "config.json"
+CONFIG_PATH = Path(__file__).parent.parent / "config.json"
 
 SUPPORTED_LANGS = {"en": "English", "zh": "中文"}
 

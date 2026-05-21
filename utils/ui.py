@@ -1,6 +1,6 @@
 import os
 
-from i18n import t, tool_display_name, tool_description
+from utils.i18n import t, tool_display_name, tool_description
 
 
 def clear_screen():
