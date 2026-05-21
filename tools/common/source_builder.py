@@ -113,13 +113,21 @@ class SourceBuilder(Tool):
         build_dir = QUICKSHELL_DIR / "build"
         build_dir.mkdir()
         print(t("msg.configuring"))
-        code = _run_verbose([
+
+        cmake_args = [
             "cmake", "-GNinja", "-B", str(build_dir),
             "-DCMAKE_BUILD_TYPE=Release",
             "-DCRASH_HANDLER=OFF",
             "-DUSE_JEMALLOC=OFF",
             "-DSERVICE_POLKIT=OFF",
-        ], cwd=str(QUICKSHELL_DIR))
+        ]
+
+        # Use Qt from custom install if available
+        qt_dir = Path.home() / "software" / "QT" / "6.10.2" / "gcc_64"
+        if qt_dir.exists():
+            cmake_args.append(f"-DCMAKE_PREFIX_PATH={qt_dir}")
+
+        code = _run_verbose(cmake_args, cwd=str(QUICKSHELL_DIR))
         if code != 0:
             print(t("msg.configure_failed"))
             return False
