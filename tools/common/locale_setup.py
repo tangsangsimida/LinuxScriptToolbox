@@ -1,3 +1,4 @@
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -68,6 +69,20 @@ class LocaleInitializer(Tool):
                 return "arch"
         return "debian"
 
+    def _install_language_packs(self, distro: str) -> None:
+        if distro == "arch":
+            return  # Arch includes translations with main packages
+        for pkg in [
+            "language-pack-zh-hans",
+            "language-pack-zh-hans-base",
+            "language-pack-gnome-zh-hans",
+            "language-pack-gnome-zh-hans-base",
+        ]:
+            if _package_installed_deb(pkg):
+                continue
+            print(t("msg.installing", package=pkg))
+            _run_verbose(["sudo", "apt-get", "install", "-y", pkg])
+
     def _setup_locale(self, distro: str) -> None:
         _, locale_out = _run(["locale"])
         lang_ok = "LANG=zh_CN.UTF-8" in locale_out
@@ -77,6 +92,8 @@ class LocaleInitializer(Tool):
         if lang_ok and lang_env_ok:
             print(t("msg.locale_already"))
             return
+
+        self._install_language_packs(distro)
 
         if not LOCALE_GEN.exists():
             print(t("msg.locale_gen_not_found"))
@@ -106,6 +123,38 @@ class LocaleInitializer(Tool):
 
         # Set GNOME desktop region for GUI language
         _run(["gsettings", "set", "org.gnome.system.locale", "region", "zh_CN.UTF-8"])
+
+        # Set AccountsService language (GNOME reads this for login language)
+        import getpass
+        user = getpass.getuser()
+        acct_file = Path(f"/var/lib/AccountsService/users/{user}")
+        if acct_file.exists():
+            content = acct_file.read_text()
+            if "Language=" in content:
+                content = re.sub(r"Language=.*", "Language=zh_CN.UTF-8", content)
+            else:
+                content = content.replace("[User]", "[User]\nLanguage=zh_CN.UTF-8")
+            subprocess.run(["sudo", "tee", str(acct_file)], input=content, capture_output=True, text=True)
+
+        # Write ~/.pam_environment for user-session locale (PAM reads at login)
+        pam_env = Path.home() / ".pam_environment"
+        pam_content = "\n".join([
+            "LANGUAGE\tDEFAULT=zh_CN:en",
+            "LANG\tDEFAULT=zh_CN.UTF-8",
+            "LC_NUMERIC\tDEFAULT=zh_CN.UTF-8",
+            "LC_TIME\tDEFAULT=zh_CN.UTF-8",
+            "LC_MONETARY\tDEFAULT=zh_CN.UTF-8",
+            "LC_PAPER\tDEFAULT=zh_CN.UTF-8",
+            "LC_NAME\tDEFAULT=zh_CN.UTF-8",
+            "LC_ADDRESS\tDEFAULT=zh_CN.UTF-8",
+            "LC_TELEPHONE\tDEFAULT=zh_CN.UTF-8",
+            "LC_MEASUREMENT\tDEFAULT=zh_CN.UTF-8",
+            "LC_IDENTIFICATION\tDEFAULT=zh_CN.UTF-8",
+            "PAPERSIZE\tDEFAULT=a4",
+            "",
+        ])
+        pam_env.write_text(pam_content)
+        print(t("msg.pam_env_written", path=str(pam_env)))
 
         print(t("msg.locale_set"))
 
