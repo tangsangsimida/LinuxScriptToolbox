@@ -1,9 +1,11 @@
+import getpass
 import subprocess
 import sys
 from pathlib import Path
 
 from tools.base import Tool
 from utils.i18n import t
+from utils.sudo_utils import write_file, copy_file
 
 DISTRO_CONFIG = {
     "arch": {"service": "sshd", "package": "openssh"},
@@ -11,6 +13,7 @@ DISTRO_CONFIG = {
 }
 
 PYTHON_SYMLINK = Path("/usr/local/bin/python")
+SSHD_CONFIG = Path("/etc/ssh/sshd_config")
 
 
 def _run_cmd(cmd: list[str]) -> tuple[int, str]:
@@ -27,10 +30,104 @@ def _run_verbose(cmd: list[str]) -> int:
     return proc.returncode
 
 
+def _has_password(user: str) -> bool:
+    """Check if user has a password set by reading shadow file."""
+    code, out = _run_cmd(["sudo", "grep", f"^{user}:", "/etc/shadow"])
+    if code != 0:
+        return False
+    # Field 2 is the password hash; '!' or '!!' or empty means no password
+    fields = out.split(":")
+    if len(fields) < 2:
+        return False
+    pw_hash = fields[1]
+    return pw_hash not in ("!", "!!", "", "*")
+
+
+def _set_password(user: str) -> None:
+    """Prompt for and set user password."""
+    try:
+        pw1 = getpass.getpass(t("msg.enter_password"))
+        pw2 = getpass.getpass(t("msg.confirm_password"))
+    except (KeyboardInterrupt, EOFError):
+        print()
+        return
+    if pw1 != pw2:
+        print(t("msg.password_mismatch"))
+        return
+    code, _ = _run_cmd(["sudo", "chpasswd"])
+    # chpasswd reads from stdin
+    proc = subprocess.run(
+        ["sudo", "chpasswd"],
+        input=f"{user}:{pw1}",
+        text=True,
+        capture_output=True,
+    )
+    if proc.returncode != 0:
+        print(t("msg.password_set_failed"))
+        return
+    print(t("msg.password_set_success", user=user))
+
+
+def _configure_sshd() -> None:
+    """Ensure PasswordAuthentication yes in sshd_config."""
+    print(t("msg.checking_sshd_config"))
+
+    code, content = _run_cmd(["sudo", "cat", str(SSHD_CONFIG)])
+    if code != 0:
+        return
+
+    if "PasswordAuthentication no" in content:
+        backup = str(SSHD_CONFIG) + ".bak"
+        copy_file(str(SSHD_CONFIG), backup)
+        print(t("msg.sshd_config_backup", path=backup))
+
+        new_content = content.replace("PasswordAuthentication no", "PasswordAuthentication yes")
+        write_file(str(SSHD_CONFIG), new_content)
+
+        _run_cmd(["sudo", "systemctl", "restart", "sshd"])
+        print(t("msg.password_auth_enabled"))
+        print(t("msg.sshd_restarted"))
+    else:
+        print(t("msg.password_auth_already"))
+
+
+def _open_firewall_ssh() -> None:
+    """Allow SSH through the active firewall."""
+    print(t("msg.step_firewall"))
+
+    # Detect firewall backend
+    fw = None
+    if _run_cmd(["which", "ufw"])[0] == 0:
+        fw = "ufw"
+    elif _run_cmd(["which", "firewall-cmd"])[0] == 0:
+        fw = "firewalld"
+    elif _run_cmd(["which", "iptables"])[0] == 0:
+        fw = "iptables"
+
+    if fw is None:
+        print(t("msg.firewall_no_active"))
+        return
+
+    print(t("msg.firewall_detected", fw=fw))
+    confirm = input(t("msg.firewall_allow_ssh") + " (y/N) ").strip().lower()
+    if confirm != "y":
+        return
+
+    if fw == "ufw":
+        _run_cmd(["sudo", "ufw", "allow", "ssh"])
+    elif fw == "firewalld":
+        _run_cmd(["sudo", "firewall-cmd", "--permanent", "--add-service=ssh"])
+        _run_cmd(["sudo", "firewall-cmd", "--reload"])
+    elif fw == "iptables":
+        _run_cmd(["sudo", "iptables", "-I", "INPUT", "-p", "tcp", "--dport", "22", "-j", "ACCEPT"])
+
+    print(t("msg.firewall_rule_added"))
+
+
 class DeviceInitializer(Tool):
     name = "device-init"
-    display_name = "Initialize Device (SSH)"
-    description = "Enable and start SSH service, set to auto-start on boot"
+    display_name = "Initialize Device"
+    description = "Set up SSH access (install, password, config, firewall) and python alias"
     distros = list(DISTRO_CONFIG.keys())
 
     def _get_config(self, distro: str) -> dict:
@@ -79,7 +176,7 @@ class DeviceInitializer(Tool):
         service = cfg["service"]
         package = cfg["package"]
 
-        # Install if needed
+        # Step 1: Install if needed
         if not self._is_installed(package):
             if not self._install(package, distro):
                 print(t("msg.install_failed", package=package))
@@ -88,7 +185,7 @@ class DeviceInitializer(Tool):
         else:
             print(t("msg.already_installed", package=package))
 
-        # Start service
+        # Step 2: Start service
         if self._is_active(service):
             print(t("msg.service_already_running", service=service))
         else:
@@ -98,7 +195,7 @@ class DeviceInitializer(Tool):
                 return False
             print(t("msg.service_started", service=service))
 
-        # Enable on boot
+        # Step 3: Enable on boot
         if self._is_enabled(service):
             print(t("msg.service_already_enabled", service=service))
         else:
@@ -108,7 +205,23 @@ class DeviceInitializer(Tool):
                 return False
             print(t("msg.service_enabled", service=service))
 
-        # Setup python alias
+        # Step 4: Set user password if not set
+        print(t("msg.step_password"))
+        user = getpass.getuser()
+        if _has_password(user):
+            print(t("msg.password_already_set", user=user))
+        else:
+            print(t("msg.password_not_set", user=user))
+            _set_password(user)
+
+        # Step 5: Configure sshd for password auth
+        print(t("msg.step_sshd_config"))
+        _configure_sshd()
+
+        # Step 6: Open firewall
+        _open_firewall_ssh()
+
+        # Step 7: Setup python alias
         self._setup_python_alias()
 
         return True
