@@ -3,6 +3,7 @@ from pathlib import Path
 
 from tools.base import Tool
 from utils.sudo_utils import write_file, need_sudo
+from i18n import t
 
 MIRRORLIST = Path("/etc/pacman.d/mirrorlist")
 BACKUP_SUFFIX = ".bak"
@@ -52,19 +53,19 @@ class ArchMirrorOptimizer(Tool):
 
     def run(self) -> bool:
         if not MIRRORLIST.exists():
-            print("Error: /etc/pacman.d/mirrorlist not found")
+            print(t("msg.mirrorlist_not_found"))
             return False
 
         if need_sudo(MIRRORLIST):
-            print("Root privileges required")
+            print(t("msg.root_required"))
 
         backed_up = self.backup()
         if backed_up:
-            print(f"Backup saved to {MIRRORLIST}{BACKUP_SUFFIX}")
+            print(t("msg.backup_saved", path=f"{MIRRORLIST}{BACKUP_SUFFIX}"))
         else:
-            print("Backup already exists, skipped")
+            print(t("msg.backup_exists"))
 
         content = self.build_mirrorlist()
         self.apply(content)
-        print("Mirrorlist updated with China mirrors at top")
+        print(t("msg.mirrorlist_updated"))
         return True

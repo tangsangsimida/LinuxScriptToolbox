@@ -9,48 +9,59 @@ sys.path.insert(0, str(Path(__file__).parent))
 from distro import detect_distro
 from ui import show_header, show_menu
 from tools import get_tools_for_distro, TOOLS
+from i18n import t, set_lang, get_lang, SUPPORTED_LANGS
+
+
+def select_language():
+    print(t("ui.select_language"))
+    langs = list(SUPPORTED_LANGS.items())
+    for i, (code, label) in enumerate(langs, 1):
+        print(f"  [{i}] {label}")
+    choice = input(t("ui.select")).strip()
+    try:
+        idx = int(choice) - 1
+        if 0 <= idx < len(langs):
+            set_lang(langs[idx][0])
+    except ValueError:
+        pass
 
 
 def main():
     distro = detect_distro()
 
-    matched = get_tools_for_distro(distro)
-    if not matched:
-        print(f"No tools available for distro: {distro}")
-        print("Available tools for any distro:")
-        show_menu(TOOLS)
-        input("Select: ").strip().lower()
-        tools_to_run = TOOLS
-    else:
-        tools_to_run = matched
+    tools_to_run = get_tools_for_distro(distro)
 
     while True:
         show_header(distro)
         show_menu(tools_to_run)
 
-        choice = input("Select: ").strip().lower()
+        choice = input(t("ui.select")).strip().lower()
 
         if choice == "q":
-            print("Goodbye!")
+            print(t("ui.goodbye"))
             break
+        elif choice == "l":
+            select_language()
         elif choice == "a":
             for tool in tools_to_run:
-                print(f"\n--- Running: {tool.display_name} ---")
+                from i18n import tool_display_name
+                print(f"\n{t('ui.running', name=tool_display_name(tool))}")
                 tool.run()
-            input("\nPress Enter to continue...")
+            input(f"\n{t('ui.press_enter')}")
         else:
             try:
                 idx = int(choice) - 1
                 if 0 <= idx < len(tools_to_run):
-                    print(f"\n--- Running: {tools_to_run[idx].display_name} ---")
+                    from i18n import tool_display_name
+                    print(f"\n{t('ui.running', name=tool_display_name(tools_to_run[idx]))}")
                     tools_to_run[idx].run()
-                    input("\nPress Enter to continue...")
+                    input(f"\n{t('ui.press_enter')}")
                 else:
-                    print("Invalid selection")
-                    input("Press Enter to continue...")
+                    print(t("ui.invalid_selection"))
+                    input(t("ui.press_enter"))
             except ValueError:
-                print("Invalid input")
-                input("Press Enter to continue...")
+                print(t("ui.invalid_input"))
+                input(t("ui.press_enter"))
 
 
 if __name__ == "__main__":
