@@ -198,6 +198,41 @@ class LocaleInitializer(Tool):
         print(t("msg.fcitx5_installed"))
         return True
 
+    def _configure_fcitx5(self) -> None:
+        # Add IM environment variables to /etc/environment
+        env_file = Path("/etc/environment")
+        env_content = env_file.read_text()
+        im_vars = {"GTK_IM_MODULE": "fcitx", "QT_IM_MODULE": "fcitx", "XMODIFIERS": "@im=fcitx"}
+        for var, val in im_vars.items():
+            if var not in env_content:
+                env_content = env_content.rstrip() + f"\n{var}={val}\n"
+        subprocess.run(["sudo", "tee", str(env_file)], input=env_content, capture_output=True, text=True)
+
+        # Also add to ~/.pam_environment
+        pam_env = Path.home() / ".pam_environment"
+        if pam_env.exists():
+            pam_content = pam_env.read_text()
+        else:
+            pam_content = ""
+        for var, val in im_vars.items():
+            if var not in pam_content:
+                pam_content += f"{var}\tDEFAULT={val}\n"
+        pam_env.write_text(pam_content)
+
+        # Set GNOME input sources to include Fcitx5 Rime
+        _run(["gsettings", "set", "org.gnome.desktop.input-sources", "sources",
+              "[('xkb', 'us'), ('fcitx', 'rime')]"])
+
+        # Enable Fcitx5 autostart
+        autostart_dir = Path.home() / ".config" / "autostart"
+        autostart_dir.mkdir(parents=True, exist_ok=True)
+        desktop_src = Path("/usr/share/applications/org.fcitx.Fcitx5.desktop")
+        desktop_dst = autostart_dir / "org.fcitx.Fcitx5.desktop"
+        if desktop_src.exists() and not desktop_dst.exists():
+            _run(["cp", str(desktop_src), str(desktop_dst)])
+
+        print(t("msg.fcitx5_configured"))
+
     # --- rime-ice ---
 
     def _setup_rime_ice(self) -> None:
@@ -230,6 +265,7 @@ class LocaleInitializer(Tool):
         print(t("msg.step_fcitx5"))
         if not self._install_fcitx5_rime(distro):
             return False
+        self._configure_fcitx5()
 
         print(t("msg.step_rime_ice"))
         self._setup_rime_ice()
