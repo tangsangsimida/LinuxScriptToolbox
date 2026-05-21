@@ -1,2 +1,1 @@
-# LinuxScriptToolbox - no external dependencies required
-# Uses only Python standard library
+rich>=13.0
