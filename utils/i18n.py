@@ -26,6 +26,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tool.arch-mirror-optimizer.description": "Add China mirrors to the top of /etc/pacman.d/mirrorlist",
         "tool.debian-mirror-optimizer.display_name": "Optimize APT Mirrors",
         "tool.debian-mirror-optimizer.description": "Replace mirrors in /etc/apt/sources.list with China mirrors",
+        "tool.device-init.display_name": "Initialize Device (SSH)",
+        "tool.device-init.description": "Enable and start SSH service, set to auto-start on boot",
         # Messages
         "msg.backup_saved": "Backup saved to {path}",
         "msg.backup_exists": "Backup already exists, skipped",
@@ -34,6 +36,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.sources_list_not_found": "Error: /etc/apt/sources.list not found",
         "msg.sources_list_updated": "sources.list updated with China mirror",
         "msg.root_required": "Root privileges required",
+        "msg.installing": "Installing {package}...",
+        "msg.install_success": "{package} installed successfully.",
+        "msg.install_failed": "Failed to install {package}.",
+        "msg.already_installed": "{package} is already installed.",
+        "msg.service_started": "Service {service} started.",
+        "msg.service_already_running": "Service {service} is already running.",
+        "msg.service_start_failed": "Failed to start service {service}.",
+        "msg.service_enabled": "Service {service} enabled on boot.",
+        "msg.service_already_enabled": "Service {service} is already enabled on boot.",
+        "msg.service_enable_failed": "Failed to enable service {service}.",
     },
     "zh": {
         # UI
@@ -55,6 +67,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tool.arch-mirror-optimizer.description": "将中国镜像源添加到 /etc/pacman.d/mirrorlist 顶部",
         "tool.debian-mirror-optimizer.display_name": "优化 APT 镜像源",
         "tool.debian-mirror-optimizer.description": "将 /etc/apt/sources.list 中的镜像源替换为中国镜像源",
+        "tool.device-init.display_name": "设备初始化 (SSH)",
+        "tool.device-init.description": "启动 SSH 服务并设置开机自启动",
         # Messages
         "msg.backup_saved": "备份已保存到 {path}",
         "msg.backup_exists": "备份已存在，已跳过",
@@ -63,6 +77,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.sources_list_not_found": "错误：/etc/apt/sources.list 不存在",
         "msg.sources_list_updated": "sources.list 已更新为中国镜像源",
         "msg.root_required": "需要 root 权限",
+        "msg.installing": "正在安装 {package}...",
+        "msg.install_success": "{package} 安装成功。",
+        "msg.install_failed": "{package} 安装失败。",
+        "msg.already_installed": "{package} 已安装。",
+        "msg.service_started": "服务 {service} 已启动。",
+        "msg.service_already_running": "服务 {service} 已在运行。",
+        "msg.service_start_failed": "服务 {service} 启动失败。",
+        "msg.service_enabled": "服务 {service} 已设置开机自启动。",
+        "msg.service_already_enabled": "服务 {service} 已设置开机自启动。",
+        "msg.service_enable_failed": "服务 {service} 设置开机自启动失败。",
     },
 }
 
