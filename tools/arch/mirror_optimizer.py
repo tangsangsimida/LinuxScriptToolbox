@@ -1,6 +1,7 @@
 import shutil
 from pathlib import Path
 
+from tools.base import Tool
 from utils.sudo_utils import write_file, need_sudo
 
 MIRRORLIST = Path("/etc/pacman.d/mirrorlist")
@@ -16,7 +17,7 @@ CHINA_MIRRORS = [
 ]
 
 
-class ArchMirrorOptimizer:
+class ArchMirrorOptimizer(Tool):
     name = "arch-mirror-optimizer"
     display_name = "Optimize Pacman Mirrors"
     description = "Add China mirrors to the top of /etc/pacman.d/mirrorlist"
