@@ -1,4 +1,5 @@
 import subprocess
+import sys
 from pathlib import Path
 
 from tools.base import Tool
@@ -17,6 +18,15 @@ def _run_cmd(cmd: list[str]) -> tuple[int, str]:
     return result.returncode, result.stdout.strip()
 
 
+def _run_verbose(cmd: list[str]) -> int:
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    for line in proc.stdout:
+        sys.stdout.write(line)
+        sys.stdout.flush()
+    proc.wait()
+    return proc.returncode
+
+
 class DeviceInitializer(Tool):
     name = "device-init"
     display_name = "Initialize Device (SSH)"
@@ -32,9 +42,9 @@ class DeviceInitializer(Tool):
     def _install(self, package: str, distro: str) -> bool:
         print(t("msg.installing", package=package))
         if distro == "arch":
-            code, _ = _run_cmd(["sudo", "pacman", "-S", "--noconfirm", package])
+            code = _run_verbose(["sudo", "pacman", "-S", "--noconfirm", package])
         else:
-            code, _ = _run_cmd(["sudo", "apt-get", "install", "-y", package])
+            code = _run_verbose(["sudo", "apt-get", "install", "-y", package])
         return code == 0
 
     def _is_active(self, service: str) -> bool:
