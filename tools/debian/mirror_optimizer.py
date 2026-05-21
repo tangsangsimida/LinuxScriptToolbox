@@ -31,43 +31,56 @@ class DebianMirrorOptimizer(Tool):
         copy_file(SOURCES_LIST, backup_path)
         return True
 
-    def _detect_repo(self, content: str) -> tuple[str, str]:
-        """Detect distro codename and archive type from existing sources.list."""
-        codename = "bookworm"
-        archive = "debian"
+    def _detect_repo(self, content: str) -> tuple[str, str, str]:
+        """Detect archive, codename, and distro family from existing sources.list.
+
+        Returns (archive, codename, family) where family is 'ubuntu' or 'debian'.
+        """
         for line in content.splitlines():
             line = line.strip()
             if line.startswith("#") or not line:
                 continue
-            match = re.search(r"(deb|deb-src)\s+https?://\S+\s+(\w+)", line)
+            match = re.match(r"(?:deb|deb-src)\s+https?://\S+/(\S+)\s+(\S+)", line)
             if match:
+                archive = match.group(1)
                 codename = match.group(2)
-                if codename in ("stable", "testing", "unstable", "oldstable"):
-                    break
-                break
-        if "ubuntu" in content.lower():
-            archive = "ubuntu"
-            for line in content.splitlines():
-                match = re.search(r"https?://\S+\s+(\w+)-", line)
-                if match:
-                    codename = match.group(1)
-                    break
-        return archive, codename
+                family = "ubuntu" if "ubuntu" in archive else "debian"
+                return archive, codename, family
+        return "debian", "bookworm", "debian"
 
     def build_sources(self, content: str) -> str:
-        archive, codename = self._detect_repo(content)
+        archive, codename, family = self._detect_repo(content)
         mirror = CHINA_MIRRORS[0]
-        lines = [
-            f"# China mirror (fastest for mainland China)",
-            f"deb https://{mirror}/{archive} {codename} main contrib non-free non-free-firmware",
-            f"deb-src https://{mirror}/{archive} {codename} main contrib non-free non-free-firmware",
-            f"",
-            f"deb https://{mirror}/{archive} {codename}-updates main contrib non-free non-free-firmware",
-            f"deb-src https://{mirror}/{archive} {codename}-updates main contrib non-free non-free-firmware",
-            f"",
-            f"deb https://{mirror}/{archive}-security {codename}-security main contrib non-free non-free-firmware",
-            f"deb-src https://{mirror}/{archive}-security {codename}-security main contrib non-free non-free-firmware",
-        ]
+
+        if family == "ubuntu":
+            components = "main restricted universe multiverse"
+            lines = [
+                f"# China mirror (fastest for mainland China)",
+                f"deb https://{mirror}/{archive} {codename} {components}",
+                f"deb-src https://{mirror}/{archive} {codename} {components}",
+                "",
+                f"deb https://{mirror}/{archive} {codename}-updates {components}",
+                f"deb-src https://{mirror}/{archive} {codename}-updates {components}",
+                "",
+                f"deb https://{mirror}/{archive} {codename}-backports {components}",
+                f"deb-src https://{mirror}/{archive} {codename}-backports {components}",
+                "",
+                f"deb https://{mirror}/{archive} {codename}-security {components}",
+                f"deb-src https://{mirror}/{archive} {codename}-security {components}",
+            ]
+        else:
+            components = "main contrib non-free non-free-firmware"
+            lines = [
+                f"# China mirror (fastest for mainland China)",
+                f"deb https://{mirror}/{archive} {codename} {components}",
+                f"deb-src https://{mirror}/{archive} {codename} {components}",
+                "",
+                f"deb https://{mirror}/{archive} {codename}-updates {components}",
+                f"deb-src https://{mirror}/{archive} {codename}-updates {components}",
+                "",
+                f"deb https://{mirror}/{archive}-security {codename}-security {components}",
+                f"deb-src https://{mirror}/{archive}-security {codename}-security {components}",
+            ]
         return "\n".join(lines) + "\n"
 
     def run(self) -> bool:
