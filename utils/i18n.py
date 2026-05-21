@@ -26,8 +26,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tool.arch-mirror-optimizer.description": "Add China mirrors to the top of /etc/pacman.d/mirrorlist",
         "tool.debian-mirror-optimizer.display_name": "Optimize APT Mirrors",
         "tool.debian-mirror-optimizer.description": "Replace APT mirrors with China mirrors (supports deb822 and traditional formats)",
-        "tool.device-init.display_name": "Initialize Device (SSH)",
-        "tool.device-init.description": "Enable and start SSH service, set to auto-start on boot",
+        "tool.device-init.display_name": "Initialize Device",
+        "tool.device-init.description": "Enable SSH service and set up python alias",
         # Messages
         "msg.backup_saved": "Backup saved to {path}",
         "msg.backup_exists": "Backup already exists, skipped",
@@ -47,6 +47,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.service_enabled": "Service {service} enabled on boot.",
         "msg.service_already_enabled": "Service {service} is already enabled on boot.",
         "msg.service_enable_failed": "Failed to enable service {service}.",
+        "msg.python3_not_found": "python3 not found, skipping alias setup.",
+        "msg.python_already_exists": "'python' command already exists, skipped.",
+        "msg.python_alias_created": "Created alias python=python3 in {path}",
     },
     "zh": {
         # UI
@@ -68,8 +71,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tool.arch-mirror-optimizer.description": "将中国镜像源添加到 /etc/pacman.d/mirrorlist 顶部",
         "tool.debian-mirror-optimizer.display_name": "优化 APT 镜像源",
         "tool.debian-mirror-optimizer.description": "将 APT 镜像源替换为中国镜像源（支持 deb822 和传统格式）",
-        "tool.device-init.display_name": "设备初始化 (SSH)",
-        "tool.device-init.description": "启动 SSH 服务并设置开机自启动",
+        "tool.device-init.display_name": "设备初始化",
+        "tool.device-init.description": "启动 SSH 服务并配置 python 别名",
         # Messages
         "msg.backup_saved": "备份已保存到 {path}",
         "msg.backup_exists": "备份已存在，已跳过",
@@ -89,6 +92,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.service_enabled": "服务 {service} 已设置开机自启动。",
         "msg.service_already_enabled": "服务 {service} 已设置开机自启动。",
         "msg.service_enable_failed": "服务 {service} 设置开机自启动失败。",
+        "msg.python3_not_found": "未找到 python3，跳过别名配置。",
+        "msg.python_already_exists": "'python' 命令已存在，跳过。",
+        "msg.python_alias_created": "已创建别名 python=python3（{path}）",
     },
 }
 

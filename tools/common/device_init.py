@@ -1,4 +1,5 @@
 import subprocess
+from pathlib import Path
 
 from tools.base import Tool
 from utils.i18n import t
@@ -7,6 +8,8 @@ DISTRO_CONFIG = {
     "arch": {"service": "sshd", "package": "openssh"},
     "debian": {"service": "ssh", "package": "openssh-server"},
 }
+
+PYTHON_SYMLINK = Path("/usr/local/bin/python")
 
 
 def _run_cmd(cmd: list[str]) -> tuple[int, str]:
@@ -42,6 +45,23 @@ class DeviceInitializer(Tool):
         code, _ = _run_cmd(["systemctl", "is-enabled", service])
         return code == 0
 
+    def _setup_python_alias(self) -> None:
+        """Create persistent 'python' symlink if python3 exists but python doesn't."""
+        has_python3 = _run_cmd(["which", "python3"])[0] == 0
+        has_python = _run_cmd(["which", "python"])[0] == 0
+
+        if not has_python3:
+            print(t("msg.python3_not_found"))
+            return
+
+        if has_python:
+            print(t("msg.python_already_exists"))
+            return
+
+        python3_path = _run_cmd(["which", "python3"])[1]
+        _run_cmd(["sudo", "ln", "-sf", python3_path, str(PYTHON_SYMLINK)])
+        print(t("msg.python_alias_created", path=str(PYTHON_SYMLINK)))
+
     def run(self) -> bool:
         from utils.distro import detect_distro
         distro = detect_distro()
@@ -72,10 +92,13 @@ class DeviceInitializer(Tool):
         if self._is_enabled(service):
             print(t("msg.service_already_enabled", service=service))
         else:
-            code, out = _run_cmd(["sudo", "systemctl", "enable", service])
+            code, _ = _run_cmd(["sudo", "systemctl", "enable", service])
             if code != 0:
                 print(t("msg.service_enable_failed", service=service))
                 return False
             print(t("msg.service_enabled", service=service))
+
+        # Setup python alias
+        self._setup_python_alias()
 
         return True
