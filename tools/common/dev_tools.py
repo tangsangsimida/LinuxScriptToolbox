@@ -83,7 +83,7 @@ class DevToolsSetup(Tool):
         choice = self._show_menu()
 
         if choice == "0":
-            return True
+            return None
 
         try:
             idx = int(choice) - 1

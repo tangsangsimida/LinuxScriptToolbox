@@ -122,7 +122,7 @@ class ShorinSetup(Tool):
         choice = self._show_menu()
 
         if choice == "0":
-            return True
+            return None
 
         # Clone the repo
         if not self._clone_repo():

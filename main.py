@@ -110,9 +110,10 @@ def main():
                 if 0 <= idx < len(tools_to_run):
                     from utils.i18n import tool_display_name
                     show_tool_header(tool_display_name(tools_to_run[idx]))
-                    tools_to_run[idx].run()
-                    console.print()
-                    ask(t("ui.press_enter"))
+                    result = tools_to_run[idx].run()
+                    if result is not None:
+                        console.print()
+                        ask(t("ui.press_enter"))
                 else:
                     print_error(t("ui.invalid_selection"))
                     ask(t("ui.press_enter"))
