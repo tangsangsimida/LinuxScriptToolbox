@@ -53,6 +53,30 @@ test_ssh_init() {
     run_remote "$host" "systemctl is-active $svc; systemctl is-enabled $svc"
 }
 
+test_dev_tools() {
+    local host="$1"
+    local svc
+    echo ""
+    echo "========================================"
+    echo "  Test: Dev Tools Setup [$host]"
+    echo "========================================"
+
+    # Test ARM GCC installation (option 1)
+    echo "==> Installing ARM GCC toolchain..."
+    run_remote "$host" "cd ~/LinuxScriptToolbox && echo '1' | echo '1' | python3 main.py" || true
+    echo ""
+    echo "==> Verifying ARM GCC:"
+    run_remote "$host" "arm-none-eabi-gcc --version | head -1" || echo "arm-none-eabi-gcc not found"
+    echo ""
+
+    # Test RISC-V GCC installation (option 2)
+    echo "==> Installing RISC-V GCC toolchain..."
+    run_remote "$host" "cd ~/LinuxScriptToolbox && echo '1' | echo '2' | python3 main.py" || true
+    echo ""
+    echo "==> Verifying RISC-V GCC:"
+    run_remote "$host" "riscv64-elf-gcc --version 2>/dev/null | head -1 || riscv64-linux-gnu-gcc --version 2>/dev/null | head -1 || echo 'RISC-V GCC not found'"
+}
+
 test_mirror_opt() {
     local host="$1"
     echo ""
@@ -87,6 +111,7 @@ test_mirror_opt() {
 test_all() {
     local host="$1"
     test_ssh_init "$host"
+    test_dev_tools "$host"
     test_mirror_opt "$host"
 }
 
@@ -105,9 +130,10 @@ for HOST in "${HOSTS[@]}"; do
 
     case "$TOOL" in
         ssh-init)   test_ssh_init "$HOST" ;;
+        dev-tools)  test_dev_tools "$HOST" ;;
         mirror-opt) test_mirror_opt "$HOST" ;;
         all)        test_all "$HOST" ;;
-        *)          echo "Usage: $0 [ssh-init|mirror-opt|all] [host]"; exit 1 ;;
+        *)          echo "Usage: $0 [ssh-init|dev-tools|mirror-opt|all] [host]"; exit 1 ;;
     esac
 done
 

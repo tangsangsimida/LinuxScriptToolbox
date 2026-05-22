@@ -28,6 +28,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tool.debian-mirror-optimizer.description": "Replace APT mirrors with China mirrors (supports deb822 and traditional formats)",
         "tool.device-init.display_name": "Initialize Device",
         "tool.device-init.description": "Set up SSH access (install, password, config, firewall) and python alias",
+        "tool.dev-tools.display_name": "Dev Tools Setup",
+        "tool.dev-tools.description": "Quick install embedded toolchains (ARM GCC, RISC-V GCC)",
         "tool.shorin-setup.display_name": "Shorin Setup",
         "tool.shorin-setup.description": "Clone and run shorin-arch-setup for desktop environment configuration",
         # Messages
@@ -72,6 +74,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.firewall_allow_ssh": "Allow SSH through firewall?",
         "msg.firewall_rule_added": "Firewall rule added: allow SSH (port 22).",
         "msg.apt_update": "Updating package lists...",
+        # Dev Tools
+        "msg.devtool_select": "Select toolchain to install:",
+        "msg.devtool_arm_gcc": "ARM GCC Toolchain",
+        "msg.devtool_arm_gcc_desc": "Install arm-none-eabi-gcc for ARM Cortex-R/M embedded development",
+        "msg.devtool_riscv_gcc": "RISC-V GCC Toolchain",
+        "msg.devtool_riscv_gcc_desc": "Install riscv64-elf-gcc for RISC-V embedded development",
+        "msg.devtool_installing": "Installing: {packages}...",
+        "msg.devtool_already_installed": "{toolchain} is already installed.",
+        "msg.devtool_install_success": "{toolchain} installed successfully.",
+        "msg.devtool_install_failed": "Failed to install toolchain.",
         # Shorin
         "msg.cloning": "Cloning {repo}...",
         "msg.clone_failed": "Failed to clone {repo}.",
@@ -114,6 +126,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tool.debian-mirror-optimizer.description": "将 APT 镜像源替换为中国镜像源（支持 deb822 和传统格式）",
         "tool.device-init.display_name": "设备初始化",
         "tool.device-init.description": "配置 SSH 远程访问（安装、密码、配置、防火墙）及 python 别名",
+        "tool.dev-tools.display_name": "开发工具配置",
+        "tool.dev-tools.description": "快速安装嵌入式工具链（ARM GCC、RISC-V GCC）",
         "tool.shorin-setup.display_name": "Shorin 环境配置",
         "tool.shorin-setup.description": "克隆并运行 shorin-arch-setup 进行桌面环境配置",
         # Messages
@@ -158,6 +172,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.firewall_allow_ssh": "是否允许 SSH 通过防火墙？",
         "msg.firewall_rule_added": "防火墙规则已添加：允许 SSH（端口 22）。",
         "msg.apt_update": "正在更新软件包列表...",
+        # Dev Tools
+        "msg.devtool_select": "选择要安装的工具链：",
+        "msg.devtool_arm_gcc": "ARM GCC 工具链",
+        "msg.devtool_arm_gcc_desc": "安装 arm-none-eabi-gcc，用于 ARM Cortex-R/M 嵌入式开发",
+        "msg.devtool_riscv_gcc": "RISC-V GCC 工具链",
+        "msg.devtool_riscv_gcc_desc": "安装 riscv64-elf-gcc，用于 RISC-V 嵌入式开发",
+        "msg.devtool_installing": "正在安装：{packages}...",
+        "msg.devtool_already_installed": "{toolchain} 已安装。",
+        "msg.devtool_install_success": "{toolchain} 安装成功。",
+        "msg.devtool_install_failed": "工具链安装失败。",
         # Shorin
         "msg.cloning": "正在克隆 {repo}...",
         "msg.clone_failed": "克隆 {repo} 失败。",
