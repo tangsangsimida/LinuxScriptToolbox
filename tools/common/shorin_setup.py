@@ -4,6 +4,7 @@ from pathlib import Path
 from tools.base import Tool
 from utils.distro import detect_distro
 from utils.i18n import t
+from utils.ui import clear_screen
 
 SHORIN_REPO = "https://github.com/SHORiN-KiWATA/shorin-arch-setup.git"
 SHORIN_DIR = Path("/tmp/shorin-arch-setup")
@@ -56,6 +57,7 @@ class ShorinSetup(Tool):
         return True
 
     def _show_menu(self) -> str:
+        clear_screen()
         print(t("msg.shorin_select"))
         print("-" * 50)
         keys = list(SETUP_OPTIONS.keys())
@@ -63,6 +65,7 @@ class ShorinSetup(Tool):
             opt = SETUP_OPTIONS[key]
             print(f"  [{i}] {t(opt['name_key'])}")
             print(f"      {t(opt['desc_key'])}")
+        print(f"  [0] {t('ui.back')}")
         print("-" * 50)
         return input(t("ui.select")).strip()
 
@@ -115,12 +118,15 @@ class ShorinSetup(Tool):
     def run(self) -> bool:
         distro = detect_distro()
 
+        # Show menu
+        choice = self._show_menu()
+
+        if choice == "0":
+            return True
+
         # Clone the repo
         if not self._clone_repo():
             return False
-
-        # Show menu
-        choice = self._show_menu()
 
         try:
             idx = int(choice) - 1

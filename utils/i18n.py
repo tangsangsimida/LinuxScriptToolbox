@@ -20,6 +20,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ui.invalid_selection": "Invalid selection",
         "ui.invalid_input": "Invalid input",
         "ui.goodbye": "Goodbye!",
+        "ui.back": "Back",
         "ui.select_language": "Select language:",
         # Tools
         "tool.arch-mirror-optimizer.display_name": "Optimize Pacman Mirrors",
@@ -138,6 +139,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ui.invalid_selection": "无效选择",
         "ui.invalid_input": "无效输入",
         "ui.goodbye": "再见！",
+        "ui.back": "返回",
         "ui.select_language": "选择语言：",
         # Tools
         "tool.arch-mirror-optimizer.display_name": "优化 Pacman 镜像源",

@@ -6,7 +6,7 @@ from pathlib import Path
 from tools.base import Tool
 from utils.distro import detect_distro
 from utils.i18n import t
-from utils.ui import print_success, print_error, print_info, ask, console
+from utils.ui import print_success, print_error, print_info, ask, console, clear_screen
 
 FIX_OPTIONS = [
     {
@@ -131,10 +131,12 @@ class QuickFixes(Tool):
     distros = ["arch", "debian"]
 
     def _show_menu(self) -> str:
+        clear_screen()
         console.print(f"\n  [bold]{t('msg.qfix_select')}[/bold]\n")
         for i, opt in enumerate(FIX_OPTIONS, 1):
             console.print(f"  [[bold yellow]{i}[/bold yellow]] [bold cyan]{t(opt['name_key'])}[/bold cyan]")
             console.print(f"      [dim]{t(opt['desc_key'])}[/dim]")
+        console.print(f"  [[bold yellow]0[/bold yellow]] [dim]{t('ui.back')}[/dim]")
         console.print()
         return ask(t("ui.select"))
 
@@ -177,6 +179,9 @@ class QuickFixes(Tool):
 
     def run(self) -> bool:
         choice = self._show_menu()
+
+        if choice == "0":
+            return True
 
         try:
             idx = int(choice) - 1

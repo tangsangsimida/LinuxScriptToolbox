@@ -87,5 +87,11 @@ def print_running(name: str):
     console.print()
 
 
+def show_tool_header(name: str):
+    clear_screen()
+    console.rule(f"[bold cyan]{name}[/bold cyan]", style="cyan")
+    console.print()
+
+
 def ask(prompt: str, **kwargs) -> str:
     return Prompt.ask(f"  [bold cyan]▸[/bold cyan] {prompt}", **kwargs)

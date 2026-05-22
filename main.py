@@ -59,7 +59,7 @@ ensure_venv()
 
 from utils.distro import detect_distro
 from utils.ui import (
-    show_header, show_menu, print_success, print_error,
+    show_header, show_menu, show_tool_header, print_success, print_error,
     print_info, print_running, ask, console,
 )
 from tools import get_tools_for_distro, TOOLS
@@ -100,7 +100,7 @@ def main():
         elif choice == "a":
             for tool in tools_to_run:
                 from utils.i18n import tool_display_name
-                print_running(tool_display_name(tool))
+                show_tool_header(tool_display_name(tool))
                 tool.run()
             console.print()
             ask(t("ui.press_enter"))
@@ -109,7 +109,7 @@ def main():
                 idx = int(choice) - 1
                 if 0 <= idx < len(tools_to_run):
                     from utils.i18n import tool_display_name
-                    print_running(tool_display_name(tools_to_run[idx]))
+                    show_tool_header(tool_display_name(tools_to_run[idx]))
                     tools_to_run[idx].run()
                     console.print()
                     ask(t("ui.press_enter"))
