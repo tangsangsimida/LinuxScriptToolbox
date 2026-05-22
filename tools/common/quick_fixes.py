@@ -78,15 +78,36 @@ def _find_stm32cubemx() -> Path | None:
 def _create_wrapper(cubemx_path: Path) -> Path | None:
     wrapper_dir = Path.home() / ".local" / "bin"
     wrapper_dir.mkdir(parents=True, exist_ok=True)
-    wrapper_path = wrapper_dir / "STM32CubeMX-fixed.sh"
     content = WRAPPER_TEMPLATE.format(cubemx_path=cubemx_path)
+
+    # Create as "STM32CubeMX" so it shadows the original in PATH
+    wrapper_path = wrapper_dir / "STM32CubeMX"
     try:
         wrapper_path.write_text(content)
         wrapper_path.chmod(wrapper_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-        return wrapper_path
     except OSError as e:
         print_error(t("msg.qfix_wrapper_failed", error=str(e)))
         return None
+
+    # Also create lowercase variant (some distros install as stm32cubemx)
+    lower_path = wrapper_dir / "stm32cubemx"
+    try:
+        if lower_path.exists() or lower_path.is_symlink():
+            lower_path.unlink()
+        lower_path.symlink_to(wrapper_path)
+    except OSError:
+        pass
+
+    # Also create the -fixed.sh variant
+    fixed_path = wrapper_dir / "STM32CubeMX-fixed.sh"
+    try:
+        if fixed_path.exists() or fixed_path.is_symlink():
+            fixed_path.unlink()
+        fixed_path.symlink_to(wrapper_path)
+    except OSError:
+        pass
+
+    return wrapper_path
 
 
 def _create_desktop_file(wrapper_path: Path) -> bool:

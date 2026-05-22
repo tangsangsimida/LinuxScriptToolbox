@@ -1,7 +1,7 @@
 #!/bin/bash
 # Remote test script for LinuxScriptToolbox
 # Usage: ./tests/remote_test.sh [tool_name] [host]
-#   tool_name: ssh-init | mirror-opt | all (default: all)
+#   tool_name: ssh-init | dev-tools | quick-fixes | mirror-opt | all (default: all)
 #   host:      run on a specific host only (optional)
 
 set -e
@@ -82,6 +82,39 @@ test_dev_tools() {
     run_remote "$host" "riscv64-elf-gcc --version 2>/dev/null | head -1 || riscv64-linux-gnu-gcc --version 2>/dev/null | head -1 || echo 'RISC-V GCC not found'"
 }
 
+test_quick_fixes() {
+    local host="$1"
+    echo ""
+    echo "========================================"
+    echo "  Test: Quick Fixes [$host]"
+    echo "========================================"
+
+    # Clean up any previous wrappers
+    run_remote "$host" "rm -f ~/.local/bin/STM32CubeMX* ~/.local/bin/stm32cubemx ~/.local/share/applications/stm32cubemx.desktop" || true
+
+    # NOTE: Menu position '4' assumes quick-fixes is the 4th tool discovered
+    # by pkgutil.walk_packages (common/ directory, alphabetical order).
+    # If tools are added/reordered, this position may need updating.
+    #
+    # First '4' = main menu quick-fixes, second '1' = STM32CubeMX Wayland Fix.
+
+    echo "==> Running STM32CubeMX Wayland Fix..."
+    run_remote "$host" "cd ~/LinuxScriptToolbox && printf '4\n1\n\n' | python3 main.py" || true
+
+    echo ""
+    echo "==> Verifying wrapper script:"
+    run_remote "$host" "test -x ~/.local/bin/STM32CubeMX && echo 'wrapper OK' || echo 'wrapper NOT FOUND'"
+
+    echo "==> Verifying lowercase symlink:"
+    run_remote "$host" "test -L ~/.local/bin/stm32cubemx && echo 'symlink OK' || echo 'symlink NOT FOUND'"
+
+    echo "==> Verifying .desktop file:"
+    run_remote "$host" "test -f ~/.local/share/applications/stm32cubemx.desktop && echo 'desktop OK' || echo 'desktop NOT FOUND'"
+
+    echo "==> Verifying PATH resolution:"
+    run_remote "$host" "which STM32CubeMX && which stm32cubemx"
+}
+
 test_mirror_opt() {
     local host="$1"
     echo ""
@@ -117,6 +150,7 @@ test_all() {
     local host="$1"
     test_ssh_init "$host"
     test_dev_tools "$host"
+    test_quick_fixes "$host"
     test_mirror_opt "$host"
 }
 
@@ -134,11 +168,12 @@ for HOST in "${HOSTS[@]}"; do
     sync_project "$HOST"
 
     case "$TOOL" in
-        ssh-init)   test_ssh_init "$HOST" ;;
-        dev-tools)  test_dev_tools "$HOST" ;;
-        mirror-opt) test_mirror_opt "$HOST" ;;
-        all)        test_all "$HOST" ;;
-        *)          echo "Usage: $0 [ssh-init|dev-tools|mirror-opt|all] [host]"; exit 1 ;;
+        ssh-init)    test_ssh_init "$HOST" ;;
+        dev-tools)   test_dev_tools "$HOST" ;;
+        quick-fixes) test_quick_fixes "$HOST" ;;
+        mirror-opt)  test_mirror_opt "$HOST" ;;
+        all)         test_all "$HOST" ;;
+        *)           echo "Usage: $0 [ssh-init|dev-tools|quick-fixes|mirror-opt|all] [host]"; exit 1 ;;
     esac
 done
 
