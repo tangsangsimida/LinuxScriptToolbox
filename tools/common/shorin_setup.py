@@ -1,8 +1,8 @@
 import subprocess
-import sys
 from pathlib import Path
 
 from tools.base import Tool
+from utils.distro import detect_distro
 from utils.i18n import t
 
 SHORIN_REPO = "https://github.com/SHORiN-KiWATA/shorin-arch-setup.git"
@@ -33,21 +33,8 @@ SETUP_OPTIONS = {
 
 
 def _run_verbose(cmd: list[str], **kwargs) -> int:
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, **kwargs)
-    for line in proc.stdout:
-        sys.stdout.write(line)
-        sys.stdout.flush()
-    proc.wait()
-    return proc.returncode
-
-
-def _get_distro() -> str:
-    os_release = Path("/etc/os-release")
-    if os_release.exists():
-        data = os_release.read_text()
-        if "ID=arch" in data or "ID_LIKE=arch" in data:
-            return "arch"
-    return "debian"
+    result = subprocess.run(cmd, **kwargs)
+    return result.returncode
 
 
 class ShorinSetup(Tool):
@@ -126,7 +113,7 @@ class ShorinSetup(Tool):
         return True
 
     def run(self) -> bool:
-        distro = _get_distro()
+        distro = detect_distro()
 
         # Clone the repo
         if not self._clone_repo():

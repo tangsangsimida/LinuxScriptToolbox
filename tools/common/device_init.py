@@ -1,6 +1,5 @@
 import getpass
 import subprocess
-import sys
 from pathlib import Path
 
 from tools.base import Tool
@@ -23,12 +22,8 @@ def _run_cmd(cmd: list[str]) -> tuple[int, str]:
 
 
 def _run_verbose(cmd: list[str]) -> int:
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    for line in proc.stdout:
-        sys.stdout.write(line)
-        sys.stdout.flush()
-    proc.wait()
-    return proc.returncode
+    result = subprocess.run(cmd)
+    return result.returncode
 
 
 def _has_password(user: str) -> bool:

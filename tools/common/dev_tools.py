@@ -1,7 +1,7 @@
 import subprocess
-import sys
 
 from tools.base import Tool
+from utils.distro import detect_distro
 from utils.i18n import t
 from utils.ui import print_success, print_error, print_info, ask, console
 
@@ -24,22 +24,8 @@ TOOLCHAIN_OPTIONS = [
 
 
 def _run_verbose(cmd: list[str]) -> int:
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    for line in proc.stdout:
-        sys.stdout.write(line)
-        sys.stdout.flush()
-    proc.wait()
-    return proc.returncode
-
-
-def _get_distro() -> str:
-    from pathlib import Path
-    os_release = Path("/etc/os-release")
-    if os_release.exists():
-        data = os_release.read_text()
-        if "ID=arch" in data or "ID_LIKE=arch" in data:
-            return "arch"
-    return "debian"
+    result = subprocess.run(cmd)
+    return result.returncode
 
 
 def _is_installed(pkg: str, distro: str) -> bool:
@@ -52,7 +38,9 @@ def _install_packages(pkgs: list[str], distro: str) -> bool:
     if distro == "arch":
         code = _run_verbose(["sudo", "pacman", "-S", "--noconfirm"] + pkgs)
     else:
-        _run_verbose(["sudo", "apt-get", "update", "-qq"])
+        if _run_verbose(["sudo", "apt-get", "update", "-qq"]) != 0:
+            print_error(t("msg.devtool_install_failed"))
+            return False
         code = _run_verbose(["sudo", "apt-get", "install", "-y"] + pkgs)
     return code == 0
 
@@ -89,7 +77,7 @@ class DevToolsSetup(Tool):
         return True
 
     def run(self) -> bool:
-        distro = _get_distro()
+        distro = detect_distro()
         choice = self._show_menu()
 
         try:
