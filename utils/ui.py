@@ -350,10 +350,10 @@ def prompt_selection(message: str, options: list[dict], show_back: bool = True) 
     """
     # Build options list
     select_options = []
-    for opt in options:
+    for i, opt in enumerate(options, 1):
         name = t(opt["name_key"])
         desc = t(opt.get("desc_key", "")) if opt.get("desc_key") else ""
-        label = f"{name} — {desc}" if desc else name
+        label = f"[{i}] {name} — {desc}" if desc else f"[{i}] {name}"
         select_options.append((opt["id"], label))
 
     if show_back:

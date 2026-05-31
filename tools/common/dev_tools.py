@@ -19,6 +19,11 @@ TOOLCHAIN_OPTIONS = [
         "arch_pkgs": ["riscv64-elf-gcc", "riscv64-elf-newlib"],
         "debian_pkgs": ["gcc-riscv64-linux-gnu", "gdb-multiarch"],
     },
+    {
+        "id": "all",
+        "name_key": "msg.devtool_all",
+        "desc_key": "msg.devtool_all_desc",
+    },
 ]
 
 
@@ -69,6 +74,16 @@ class DevToolsSetup(Tool):
 
         if choice is None or choice == BACK_ACTION:
             return None
+
+        if choice == "all":
+            console.print()
+            ok = True
+            for opt in TOOLCHAIN_OPTIONS:
+                if opt["id"] == "all":
+                    continue
+                if not self._install_toolchain(opt, distro):
+                    ok = False
+            return ok
 
         selected = next((opt for opt in TOOLCHAIN_OPTIONS if opt["id"] == choice), None)
         if selected is None:
