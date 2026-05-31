@@ -1,5 +1,8 @@
 import os
 import sys
+import tty
+import termios
+import select
 from typing import Optional
 
 import questionary
@@ -57,6 +60,61 @@ def _get_terminal_width() -> int:
 IS_TTY = _is_tty()
 TERM_WIDTH = _get_terminal_width()
 
+# ── Quick input helper ──────────────────────────────────────────
+
+_QUICK_INPUT_TIMEOUT = 0.15  # seconds — short enough to feel instant
+
+
+def _try_quick_input(valid_chars: str) -> str | None:
+    """Try to read a single character with a short timeout.
+
+    If the user types a digit or letter within the timeout, return it
+    immediately. If they press an arrow key (ESC [ sequence) or wait
+    past the timeout, return None so the caller can fall back to
+    questionary's arrow-key mode.
+
+    Args:
+        valid_chars: String of characters to accept (e.g. "123456789qal")
+    """
+    if not sys.stdin.isatty():
+        return None
+
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        # Wait for first character with timeout
+        rlist, _, _ = select.select([fd], [], [], _QUICK_INPUT_TIMEOUT)
+        if not rlist:
+            return None  # timeout — no input
+
+        ch = os.read(fd, 1).decode("utf-8", errors="ignore")
+
+        # ESC — could be bare ESC (cancel) or start of arrow key sequence
+        if ch == "\x1b":
+            rlist2, _, _ = select.select([fd], [], [], 0.02)
+            if rlist2:
+                # More bytes follow — it's an escape sequence (arrow key)
+                os.read(fd, 2)  # consume the rest (e.g. "[A")
+                return None     # fall back to questionary
+            else:
+                return None  # bare ESC = cancel
+
+        if ch in ("\r", "\n"):
+            return None  # Enter — fall back to questionary
+
+        if ch in valid_chars:
+            return ch
+
+        return None
+    except (OSError, IOError):
+        return None
+    finally:
+        try:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        except (OSError, IOError):
+            pass
+
 # ── Layout helpers ──────────────────────────────────────────────
 
 def clear_screen():
@@ -103,14 +161,28 @@ def select_tool(tools: list) -> Optional[int]:
     if not IS_TTY:
         return _select_tool_fallback(tools)
 
-    # Build choices with tool info
+    # Try quick input first (type a number or letter to select instantly)
+    valid_chars = "".join(str(i) for i in range(1, len(tools) + 1)) + "alq"
+    quick = _try_quick_input(valid_chars)
+    if quick is not None:
+        if quick == "q":
+            return -3
+        elif quick == "l":
+            return -2
+        elif quick == "a":
+            return -1
+        else:
+            idx = int(quick) - 1
+            if 0 <= idx < len(tools):
+                return idx
+
+    # Fall back to questionary arrow-key selection
     choices = []
     num = 0
 
-    # Group tools by category
     groups = _group_tools(tools)
     for group_name, group_tools in groups.items():
-        if len(groups) > 1:  # Only show headers if multiple groups
+        if len(groups) > 1:
             choices.append(questionary.Separator(f"  {group_name}"))
         for i, tool in group_tools:
             num += 1
@@ -123,20 +195,10 @@ def select_tool(tools: list) -> Optional[int]:
                 )
             )
 
-    # Add separator and special actions
     choices.append(questionary.Separator())
-    choices.append(questionary.Choice(
-        title=f"[a] {t('ui.run_all')}",
-        value=-1,
-    ))
-    choices.append(questionary.Choice(
-        title=f"[l] {t('ui.language')}",
-        value=-2,
-    ))
-    choices.append(questionary.Choice(
-        title=f"[q] {t('ui.quit')}",
-        value=-3,
-    ))
+    choices.append(questionary.Choice(title=f"[a] {t('ui.run_all')}", value=-1))
+    choices.append(questionary.Choice(title=f"[l] {t('ui.language')}", value=-2))
+    choices.append(questionary.Choice(title=f"[q] {t('ui.quit')}", value=-3))
 
     console.print(f"  [dim]{t('ui.arrow_hint')}[/dim]")
     console.print()
@@ -156,7 +218,7 @@ def select_tool(tools: list) -> Optional[int]:
             ]),
         ).ask()
 
-        return result  # None if user pressed Ctrl+C
+        return result
     except KeyboardInterrupt:
         return -3
 

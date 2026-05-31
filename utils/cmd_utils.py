@@ -3,23 +3,31 @@
 import subprocess
 
 DEFAULT_TIMEOUT = 300  # seconds
+TIMEOUT_EXIT_CODE = 124  # conventional exit code for timeout (same as coreutils timeout)
 
 
 def run_cmd(cmd: list[str], timeout: int = DEFAULT_TIMEOUT) -> tuple[int, str]:
     """Run a command and capture output.
 
     Returns:
-        (returncode, stdout_stripped)
+        (returncode, stdout_stripped). Returns (TIMEOUT_EXIT_CODE, "")
+        if the command exceeds the timeout.
     """
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-    return result.returncode, result.stdout.strip()
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        return result.returncode, result.stdout.strip()
+    except subprocess.TimeoutExpired:
+        return TIMEOUT_EXIT_CODE, ""
 
 
 def run_verbose(cmd: list[str], timeout: int = DEFAULT_TIMEOUT) -> int:
     """Run a command with live output (inherits parent stdio).
 
     Returns:
-        returncode
+        returncode. Returns TIMEOUT_EXIT_CODE if the command exceeds the timeout.
     """
-    result = subprocess.run(cmd, timeout=timeout)
-    return result.returncode
+    try:
+        result = subprocess.run(cmd, timeout=timeout)
+        return result.returncode
+    except subprocess.TimeoutExpired:
+        return TIMEOUT_EXIT_CODE

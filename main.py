@@ -87,9 +87,10 @@ def parse_args():
     return parser.parse_args()
 
 
-def find_tool(name: str):
-    """Find a tool by its name attribute."""
-    for tool in TOOLS:
+def find_tool(name: str, distro: str = None):
+    """Find a tool by its name attribute, filtered by current distro."""
+    tools = get_tools_for_distro(distro) if distro else TOOLS
+    for tool in tools:
         if tool.name == name:
             return tool
     return None
@@ -126,10 +127,12 @@ def main():
         return
 
     if args.tool:
-        tool = find_tool(args.tool)
+        distro = detect_distro()
+        tool = find_tool(args.tool, distro)
         if tool is None:
             print_error(f"Tool not found: {args.tool}")
-            print_info(f"Available: {', '.join(t.name for t in TOOLS)}")
+            available = [t.name for t in get_tools_for_distro(distro)]
+            print_info(f"Available: {', '.join(available)}")
             sys.exit(1)
         show_tool_header(tool_display_name(tool))
         result = tool.run()
