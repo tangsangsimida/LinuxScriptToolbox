@@ -1,2 +1,5 @@
 rich>=13.0
 questionary>=2.0
+
+# Dev dependencies
+pytest>=7.0
