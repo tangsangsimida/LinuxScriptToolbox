@@ -60,7 +60,7 @@ ensure_venv()
 from utils.distro import detect_distro
 from utils.ui import (
     show_header, show_menu, show_tool_header, print_success, print_error,
-    print_info, print_running, ask, console,
+    print_info, print_running, ask, console, select_tool,
 )
 from tools import get_tools_for_distro, TOOLS
 from utils.i18n import t, set_lang, get_lang, SUPPORTED_LANGS
@@ -90,36 +90,32 @@ def main():
         show_header(distro)
         show_menu(tools_to_run)
 
-        choice = ask(t("ui.select")).strip().lower()
+        choice = select_tool(tools_to_run)
 
-        if choice == "q":
+        if choice is None:
+            continue
+        elif choice == -3:  # quit
             console.print(f"\n  [bold green]{t('ui.goodbye')}[/bold green]\n")
             break
-        elif choice == "l":
+        elif choice == -2:  # language
             select_language()
-        elif choice == "a":
+        elif choice == -1:  # run all
             for tool in tools_to_run:
                 from utils.i18n import tool_display_name
                 show_tool_header(tool_display_name(tool))
                 tool.run()
             console.print()
             ask(t("ui.press_enter"))
-        else:
-            try:
-                idx = int(choice) - 1
-                if 0 <= idx < len(tools_to_run):
-                    from utils.i18n import tool_display_name
-                    show_tool_header(tool_display_name(tools_to_run[idx]))
-                    result = tools_to_run[idx].run()
-                    if result is not None:
-                        console.print()
-                        ask(t("ui.press_enter"))
-                else:
-                    print_error(t("ui.invalid_selection"))
-                    ask(t("ui.press_enter"))
-            except ValueError:
-                print_error(t("ui.invalid_input"))
+        elif 0 <= choice < len(tools_to_run):
+            from utils.i18n import tool_display_name
+            show_tool_header(tool_display_name(tools_to_run[choice]))
+            result = tools_to_run[choice].run()
+            if result is not None:
+                console.print()
                 ask(t("ui.press_enter"))
+        else:
+            print_error(t("ui.invalid_selection"))
+            ask(t("ui.press_enter"))
 
 
 if __name__ == "__main__":
