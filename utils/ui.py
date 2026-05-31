@@ -367,19 +367,31 @@ def prompt_selection(message: str, options: list[dict], show_back: bool = True) 
     Returns:
         Selected option id, BACK_ACTION if user chose back, or CANCEL_ACTION if cancelled
     """
-    # Build options list
-    select_options = []
+    # Build choices and key map
+    choices = []
+    char_map: dict[str, int] = {}
+
     for i, opt in enumerate(options, 1):
         name = t(opt["name_key"])
         desc = t(opt.get("desc_key", "")) if opt.get("desc_key") else ""
         label = f"[{i}] {name} — {desc}" if desc else f"[{i}] {name}"
-        select_options.append((opt["id"], label))
+        choices.append(questionary.Choice(title=label, value=opt["id"]))
+        char_map[str(i)] = opt["id"]
 
     if show_back:
-        select_options.append((BACK_ACTION, f"[{t('ui.back')}]"))
+        choices.append(questionary.Choice(title=f"[0] {t('ui.back')}", value=BACK_ACTION))
+        char_map["0"] = BACK_ACTION
 
-    result = select_option(message, select_options)
-    return result
+    if not IS_TTY:
+        fallback_options = [(opt["id"], f"[{i}] {t(opt['name_key'])}") for i, opt in enumerate(options, 1)]
+        if show_back:
+            fallback_options.append((BACK_ACTION, f"[0] {t('ui.back')}"))
+        return _select_option_fallback(message, fallback_options)
+
+    try:
+        return _select_with_keys(message, choices, char_map)
+    except KeyboardInterrupt:
+        return CANCEL_ACTION
 
 
 def press_any_key(prompt: str = None):
