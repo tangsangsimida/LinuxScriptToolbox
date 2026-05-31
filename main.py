@@ -59,26 +59,20 @@ ensure_venv()
 
 from utils.distro import detect_distro
 from utils.ui import (
-    show_header, show_menu, show_tool_header, print_success, print_error,
-    print_info, print_running, ask, console, select_tool,
+    show_header, show_tool_header, print_success, print_error,
+    print_info, print_running, ask, console, select_tool, select_option,
+    press_any_key,
 )
 from tools import get_tools_for_distro, TOOLS
 from utils.i18n import t, set_lang, get_lang, SUPPORTED_LANGS
 
 
 def select_language():
-    console.print(f"\n  [bold]{t('ui.select_language')}[/bold]\n")
     langs = list(SUPPORTED_LANGS.items())
-    for i, (code, label) in enumerate(langs, 1):
-        console.print(f"  [[bold yellow]{i}[/bold yellow]] {label}")
-    console.print()
-    choice = ask(t("ui.select"))
-    try:
-        idx = int(choice) - 1
-        if 0 <= idx < len(langs):
-            set_lang(langs[idx][0])
-    except ValueError:
-        pass
+    options = [(code, label) for code, label in langs]
+    result = select_option(t("ui.select_language"), options, default=get_lang())
+    if result:
+        set_lang(result)
 
 
 def main():
@@ -87,8 +81,7 @@ def main():
     tools_to_run = get_tools_for_distro(distro)
 
     while True:
-        show_header(distro)
-        show_menu(tools_to_run)
+        show_header(distro, lang=get_lang())
 
         choice = select_tool(tools_to_run)
 
@@ -105,17 +98,17 @@ def main():
                 show_tool_header(tool_display_name(tool))
                 tool.run()
             console.print()
-            ask(t("ui.press_enter"))
+            press_any_key()
         elif 0 <= choice < len(tools_to_run):
             from utils.i18n import tool_display_name
             show_tool_header(tool_display_name(tools_to_run[choice]))
             result = tools_to_run[choice].run()
             if result is not None:
                 console.print()
-                ask(t("ui.press_enter"))
+                press_any_key()
         else:
             print_error(t("ui.invalid_selection"))
-            ask(t("ui.press_enter"))
+            press_any_key()
 
 
 if __name__ == "__main__":

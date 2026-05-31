@@ -23,6 +23,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ui.back": "Back",
         "ui.select_language": "Select language:",
         "ui.arrow_hint": "Use ↑↓ to navigate, Enter to select",
+        "ui.group_common": "Common",
+        "ui.group_arch": "Arch Linux",
+        "ui.group_debian": "Debian/Ubuntu",
         # Tools
         "tool.arch-mirror-optimizer.display_name": "Optimize Pacman Mirrors",
         "tool.arch-mirror-optimizer.description": "Add China mirrors to the top of /etc/pacman.d/mirrorlist",
@@ -143,6 +146,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ui.back": "返回",
         "ui.select_language": "选择语言：",
         "ui.arrow_hint": "使用 ↑↓ 方向键选择，回车确认",
+        "ui.group_common": "通用",
+        "ui.group_arch": "Arch Linux",
+        "ui.group_debian": "Debian/Ubuntu",
         # Tools
         "tool.arch-mirror-optimizer.display_name": "优化 Pacman 镜像源",
         "tool.arch-mirror-optimizer.description": "将中国镜像源添加到 /etc/pacman.d/mirrorlist 顶部",
