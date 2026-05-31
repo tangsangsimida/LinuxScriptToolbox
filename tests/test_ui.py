@@ -106,27 +106,27 @@ class TestSelectOption(TestCase):
     """Test select_option() function."""
 
     @patch("utils.ui.IS_TTY", True)
-    @patch("utils.ui.questionary.select")
+    @patch("utils.ui._select_with_keys")
     def test_select_option_returns_value(self, mock_select):
-        mock_select.return_value.ask.return_value = "opt1"
+        mock_select.return_value = "opt1"
         from utils.ui import select_option
         options = [("opt1", "Option 1"), ("opt2", "Option 2")]
         result = select_option("Choose:", options)
         self.assertEqual(result, "opt1")
 
     @patch("utils.ui.IS_TTY", True)
-    @patch("utils.ui.questionary.select")
+    @patch("utils.ui._select_with_keys")
     def test_select_option_cancel(self, mock_select):
-        mock_select.return_value.ask.return_value = None
+        mock_select.return_value = None
         from utils.ui import select_option
         options = [("opt1", "Option 1")]
         result = select_option("Choose:", options)
         self.assertIsNone(result)
 
     @patch("utils.ui.IS_TTY", True)
-    @patch("utils.ui.questionary.select")
+    @patch("utils.ui._select_with_keys")
     def test_select_option_keyboard_interrupt(self, mock_select):
-        mock_select.return_value.ask.side_effect = KeyboardInterrupt
+        mock_select.side_effect = KeyboardInterrupt
         from utils.ui import select_option
         options = [("opt1", "Option 1")]
         result = select_option("Choose:", options)
@@ -161,9 +161,9 @@ class TestPromptSelection(TestCase):
     """Test prompt_selection() function."""
 
     @patch("utils.ui.IS_TTY", True)
-    @patch("utils.ui.questionary.select")
+    @patch("utils.ui._select_with_keys")
     def test_prompt_selection_returns_id(self, mock_select):
-        mock_select.return_value.ask.return_value = "tool1"
+        mock_select.return_value = "tool1"
         from utils.ui import prompt_selection
         options = [
             {"id": "tool1", "name_key": "Tool 1", "desc_key": "Desc 1"},
@@ -174,9 +174,9 @@ class TestPromptSelection(TestCase):
         self.assertEqual(result, "tool1")
 
     @patch("utils.ui.IS_TTY", True)
-    @patch("utils.ui.questionary.select")
+    @patch("utils.ui._select_with_keys")
     def test_prompt_selection_back(self, mock_select):
-        mock_select.return_value.ask.return_value = "back"
+        mock_select.return_value = "back"
         from utils.ui import prompt_selection, BACK_ACTION
         options = [{"id": "tool1", "name_key": "Tool 1"}]
         with patch("utils.ui.t", side_effect=lambda k: k):
@@ -184,9 +184,9 @@ class TestPromptSelection(TestCase):
         self.assertEqual(result, BACK_ACTION)
 
     @patch("utils.ui.IS_TTY", True)
-    @patch("utils.ui.questionary.select")
+    @patch("utils.ui._select_with_keys")
     def test_prompt_selection_cancel(self, mock_select):
-        mock_select.return_value.ask.return_value = None
+        mock_select.return_value = None
         from utils.ui import prompt_selection
         options = [{"id": "tool1", "name_key": "Tool 1"}]
         with patch("utils.ui.t", side_effect=lambda k: k):
@@ -194,9 +194,9 @@ class TestPromptSelection(TestCase):
         self.assertIsNone(result)
 
     @patch("utils.ui.IS_TTY", True)
-    @patch("utils.ui.questionary.select")
+    @patch("utils.ui._select_with_keys")
     def test_prompt_selection_no_back_option(self, mock_select):
-        mock_select.return_value.ask.return_value = "tool1"
+        mock_select.return_value = "tool1"
         from utils.ui import prompt_selection
         options = [{"id": "tool1", "name_key": "Tool 1"}]
         with patch("utils.ui.t", side_effect=lambda k: k):

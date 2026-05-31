@@ -1,11 +1,9 @@
 import os
 import sys
-import tty
-import termios
-import select
 from typing import Optional
 
 import questionary
+from prompt_toolkit.keys import Keys
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
@@ -60,60 +58,47 @@ def _get_terminal_width() -> int:
 IS_TTY = _is_tty()
 TERM_WIDTH = _get_terminal_width()
 
-# ── Quick input helper ──────────────────────────────────────────
+# ── Questionary with key bindings ────────────────────────────────
 
-_QUICK_INPUT_TIMEOUT = 0.15  # seconds — short enough to feel instant
+_questionary_style = questionary.Style([
+    ("question", "bold"),
+    ("answer", "fg:yellow"),
+    ("pointer", "fg:cyan bold"),
+    ("highlighted", "fg:cyan"),
+    ("selected", "fg:green"),
+    ("separator", "fg:magenta"),
+])
 
 
-def _try_quick_input(valid_chars: str) -> str | None:
-    """Try to read a single character with a short timeout.
+def _select_with_keys(message: str, choices: list, char_map: dict[str, int]):
+    """questionary.select() with digit/letter key bindings.
 
-    If the user types a digit or letter within the timeout, return it
-    immediately. If they press an arrow key (ESC [ sequence) or wait
-    past the timeout, return None so the caller can fall back to
-    questionary's arrow-key mode.
+    Pressing a key in char_map immediately returns the mapped value.
+    Arrow keys and Enter work as normal through questionary.
 
     Args:
-        valid_chars: String of characters to accept (e.g. "123456789qal")
+        message: Prompt message
+        choices: List of questionary.Choice / Separator
+        char_map: {"1": 0, "2": 1, ..., "q": -3}
     """
-    if not sys.stdin.isatty():
-        return None
+    session = questionary.select(
+        message=message,
+        choices=choices,
+        use_indicator=True,
+        style=_questionary_style,
+    )
 
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    try:
-        tty.setraw(fd)
-        # Wait for first character with timeout
-        rlist, _, _ = select.select([fd], [], [], _QUICK_INPUT_TIMEOUT)
-        if not rlist:
-            return None  # timeout — no input
+    def _make_handler(val):
+        def handler(event):
+            event.app.exit(result=val)
+        return handler
 
-        ch = os.read(fd, 1).decode("utf-8", errors="ignore")
+    # Add digit/letter bindings to the existing key bindings
+    kb = session.application.key_bindings
+    for char, val in char_map.items():
+        kb.add(char, eager=True)(_make_handler(val))
 
-        # ESC — could be bare ESC (cancel) or start of arrow key sequence
-        if ch == "\x1b":
-            rlist2, _, _ = select.select([fd], [], [], 0.02)
-            if rlist2:
-                # More bytes follow — it's an escape sequence (arrow key)
-                os.read(fd, 2)  # consume the rest (e.g. "[A")
-                return None     # fall back to questionary
-            else:
-                return None  # bare ESC = cancel
-
-        if ch in ("\r", "\n"):
-            return None  # Enter — fall back to questionary
-
-        if ch in valid_chars:
-            return ch
-
-        return None
-    except (OSError, IOError):
-        return None
-    finally:
-        try:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        except (OSError, IOError):
-            pass
+    return session.unsafe_ask()
 
 # ── Layout helpers ──────────────────────────────────────────────
 
@@ -145,39 +130,10 @@ def show_header(distro: str, lang: str = None):
 
 
 
-def select_tool(tools: list) -> Optional[int]:
-    """Interactive tool selection using questionary.
-
-    Returns:
-        Selected tool index (0-based), or special values:
-        -1 for "run all", -2 for "language", -3 for "quit"
-    """
-    if not tools:
-        console.print(f"  [dim]{t('ui.no_tools')}[/dim]")
-        ask(t("ui.press_enter"))
-        return None
-
-    # Fallback for non-TTY environments
-    if not IS_TTY:
-        return _select_tool_fallback(tools)
-
-    # Try quick input first (type a number or letter to select instantly)
-    valid_chars = "".join(str(i) for i in range(1, len(tools) + 1)) + "alq"
-    quick = _try_quick_input(valid_chars)
-    if quick is not None:
-        if quick == "q":
-            return -3
-        elif quick == "l":
-            return -2
-        elif quick == "a":
-            return -1
-        else:
-            idx = int(quick) - 1
-            if 0 <= idx < len(tools):
-                return idx
-
-    # Fall back to questionary arrow-key selection
+def _build_tool_choices(tools: list) -> tuple[list, dict[str, int]]:
+    """Build questionary choices and key map for the tool menu."""
     choices = []
+    char_map: dict[str, int] = {}
     num = 0
 
     groups = _group_tools(tools)
@@ -189,36 +145,44 @@ def select_tool(tools: list) -> Optional[int]:
             name = tool_display_name(tool)
             desc = tool_description(tool)
             choices.append(
-                questionary.Choice(
-                    title=f"[{num}] {name} — {desc}",
-                    value=i,
-                )
+                questionary.Choice(title=f"[{num}] {name} — {desc}", value=i)
             )
+            char_map[str(num)] = i
 
     choices.append(questionary.Separator())
-    choices.append(questionary.Choice(title=f"[a] {t('ui.run_all')}", value=-1))
+    choices.append(questionary.Choice(title=f"[0/a] {t('ui.run_all')}", value=-1))
     choices.append(questionary.Choice(title=f"[l] {t('ui.language')}", value=-2))
     choices.append(questionary.Choice(title=f"[q] {t('ui.quit')}", value=-3))
+    char_map["0"] = -1
+    char_map["a"] = -1
+    char_map["l"] = -2
+    char_map["q"] = -3
+
+    return choices, char_map
+
+
+def select_tool(tools: list) -> Optional[int]:
+    """Interactive tool selection — supports both arrow keys and direct input.
+
+    Returns:
+        Selected tool index (0-based), or special values:
+        -1 for "run all", -2 for "language", -3 for "quit"
+    """
+    if not tools:
+        console.print(f"  [dim]{t('ui.no_tools')}[/dim]")
+        ask(t("ui.press_enter"))
+        return None
+
+    if not IS_TTY:
+        return _select_tool_fallback(tools)
+
+    choices, char_map = _build_tool_choices(tools)
 
     console.print(f"  [dim]{t('ui.arrow_hint')}[/dim]")
     console.print()
 
     try:
-        result = questionary.select(
-            message=t("ui.select"),
-            choices=choices,
-            use_indicator=True,
-            style=questionary.Style([
-                ("question", "bold"),
-                ("answer", "fg:yellow"),
-                ("pointer", "fg:cyan bold"),
-                ("highlighted", "fg:cyan"),
-                ("selected", "fg:green"),
-                ("separator", "fg:magenta"),
-            ]),
-        ).ask()
-
-        return result
+        return _select_with_keys(t("ui.select"), choices, char_map)
     except KeyboardInterrupt:
         return -3
 
@@ -341,7 +305,7 @@ def confirm(message: str, default: bool = False) -> bool:
 
 
 def select_option(message: str, options: list[tuple[str, str]], default: str = None) -> Optional[str]:
-    """Interactive option selection using questionary.
+    """Interactive option selection — supports both arrow keys and direct input.
 
     Args:
         message: Prompt message
@@ -355,22 +319,13 @@ def select_option(message: str, options: list[tuple[str, str]], default: str = N
         return _select_option_fallback(message, options, default)
 
     choices = []
-    for value, label in options:
+    char_map: dict[str, int] = {}
+    for i, (value, label) in enumerate(options, 1):
         choices.append(questionary.Choice(title=label, value=value))
+        char_map[str(i)] = value
 
     try:
-        return questionary.select(
-            message=message,
-            choices=choices,
-            default=default,
-            style=questionary.Style([
-                ("question", "bold"),
-                ("answer", "fg:yellow"),
-                ("pointer", "fg:cyan bold"),
-                ("highlighted", "fg:cyan"),
-                ("selected", "fg:green"),
-            ]),
-        ).ask()
+        return _select_with_keys(message, choices, char_map)
     except KeyboardInterrupt:
         return None
 
