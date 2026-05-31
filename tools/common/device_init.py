@@ -3,9 +3,11 @@ import subprocess
 from pathlib import Path
 
 from tools.base import Tool
+from utils.cmd_utils import run_cmd, run_verbose
+from utils.distro import detect_distro
 from utils.i18n import t
 from utils.sudo_utils import write_file, copy_file
-from utils.ui import print_success, print_error, print_info, print_warning, ask, confirm
+from utils.ui import print_success, print_error, print_info, print_warning, confirm
 
 DISTRO_CONFIG = {
     "arch": {"service": "sshd", "package": "openssh"},
@@ -16,19 +18,9 @@ PYTHON_SYMLINK = Path("/usr/local/bin/python")
 SSHD_CONFIG = Path("/etc/ssh/sshd_config")
 
 
-def _run_cmd(cmd: list[str]) -> tuple[int, str]:
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    return result.returncode, result.stdout.strip()
-
-
-def _run_verbose(cmd: list[str]) -> int:
-    result = subprocess.run(cmd)
-    return result.returncode
-
-
 def _has_password(user: str) -> bool:
     """Check if user has a password set by reading shadow file."""
-    code, out = _run_cmd(["sudo", "grep", f"^{user}:", "/etc/shadow"])
+    code, out = run_cmd(["sudo", "grep", f"^{user}:", "/etc/shadow"])
     if code != 0:
         return False
     fields = out.split(":")
@@ -65,7 +57,7 @@ def _configure_sshd() -> None:
     """Ensure PasswordAuthentication yes in sshd_config."""
     print_info(t("msg.checking_sshd_config"))
 
-    code, content = _run_cmd(["sudo", "cat", str(SSHD_CONFIG)])
+    code, content = run_cmd(["sudo", "cat", str(SSHD_CONFIG)])
     if code != 0:
         return
 
@@ -77,7 +69,7 @@ def _configure_sshd() -> None:
         new_content = content.replace("PasswordAuthentication no", "PasswordAuthentication yes")
         write_file(str(SSHD_CONFIG), new_content)
 
-        _run_cmd(["sudo", "systemctl", "restart", "sshd"])
+        run_cmd(["sudo", "systemctl", "restart", "sshd"])
         print_success(t("msg.password_auth_enabled"))
         print_success(t("msg.sshd_restarted"))
     else:
@@ -89,11 +81,11 @@ def _open_firewall_ssh() -> None:
     print_info(t("msg.step_firewall"))
 
     fw = None
-    if _run_cmd(["which", "ufw"])[0] == 0:
+    if run_cmd(["which", "ufw"])[0] == 0:
         fw = "ufw"
-    elif _run_cmd(["which", "firewall-cmd"])[0] == 0:
+    elif run_cmd(["which", "firewall-cmd"])[0] == 0:
         fw = "firewalld"
-    elif _run_cmd(["which", "iptables"])[0] == 0:
+    elif run_cmd(["which", "iptables"])[0] == 0:
         fw = "iptables"
 
     if fw is None:
@@ -105,12 +97,12 @@ def _open_firewall_ssh() -> None:
         return
 
     if fw == "ufw":
-        _run_cmd(["sudo", "ufw", "allow", "ssh"])
+        run_cmd(["sudo", "ufw", "allow", "ssh"])
     elif fw == "firewalld":
-        _run_cmd(["sudo", "firewall-cmd", "--permanent", "--add-service=ssh"])
-        _run_cmd(["sudo", "firewall-cmd", "--reload"])
+        run_cmd(["sudo", "firewall-cmd", "--permanent", "--add-service=ssh"])
+        run_cmd(["sudo", "firewall-cmd", "--reload"])
     elif fw == "iptables":
-        _run_cmd(["sudo", "iptables", "-I", "INPUT", "-p", "tcp", "--dport", "22", "-j", "ACCEPT"])
+        run_cmd(["sudo", "iptables", "-I", "INPUT", "-p", "tcp", "--dport", "22", "-j", "ACCEPT"])
 
     print_success(t("msg.firewall_rule_added"))
 
@@ -125,28 +117,32 @@ class DeviceInitializer(Tool):
         return DISTRO_CONFIG.get(distro, DISTRO_CONFIG["debian"])
 
     def _is_installed(self, package: str) -> bool:
-        return _run_cmd(["pacman", "-Qi", package])[0] == 0 if _run_cmd(["which", "pacman"])[0] == 0 else _run_cmd(["dpkg", "-s", package])[0] == 0
+        if run_cmd(["which", "pacman"])[0] == 0:
+            code, _ = run_cmd(["pacman", "-Qi", package])
+        else:
+            code, _ = run_cmd(["dpkg", "-s", package])
+        return code == 0
 
     def _install(self, package: str, distro: str) -> bool:
         print_info(t("msg.installing", package=package))
         if distro == "arch":
-            code = _run_verbose(["sudo", "pacman", "-S", "--noconfirm", package])
+            code = run_verbose(["sudo", "pacman", "-S", "--noconfirm", package])
         else:
-            code = _run_verbose(["sudo", "apt-get", "install", "-y", package])
+            code = run_verbose(["sudo", "apt-get", "install", "-y", package])
         return code == 0
 
     def _is_active(self, service: str) -> bool:
-        code, _ = _run_cmd(["systemctl", "is-active", service])
+        code, _ = run_cmd(["systemctl", "is-active", service])
         return code == 0
 
     def _is_enabled(self, service: str) -> bool:
-        code, _ = _run_cmd(["systemctl", "is-enabled", service])
+        code, _ = run_cmd(["systemctl", "is-enabled", service])
         return code == 0
 
     def _setup_python_alias(self) -> None:
         """Create persistent 'python' symlink if python3 exists but python doesn't."""
-        has_python3 = _run_cmd(["which", "python3"])[0] == 0
-        has_python = _run_cmd(["which", "python"])[0] == 0
+        has_python3 = run_cmd(["which", "python3"])[0] == 0
+        has_python = run_cmd(["which", "python"])[0] == 0
 
         if not has_python3:
             print_warning(t("msg.python3_not_found"))
@@ -156,12 +152,11 @@ class DeviceInitializer(Tool):
             print_info(t("msg.python_already_exists"))
             return
 
-        python3_path = _run_cmd(["which", "python3"])[1]
-        _run_cmd(["sudo", "ln", "-sf", python3_path, str(PYTHON_SYMLINK)])
+        _, python3_path = run_cmd(["which", "python3"])
+        run_cmd(["sudo", "ln", "-sf", python3_path, str(PYTHON_SYMLINK)])
         print_success(t("msg.python_alias_created", path=str(PYTHON_SYMLINK)))
 
-    def run(self) -> bool:
-        from utils.distro import detect_distro
+    def run(self) -> bool | None:
         distro = detect_distro()
         cfg = self._get_config(distro)
         service = cfg["service"]
@@ -180,7 +175,7 @@ class DeviceInitializer(Tool):
         if self._is_active(service):
             print_info(t("msg.service_already_running", service=service))
         else:
-            code, out = _run_cmd(["sudo", "systemctl", "start", service])
+            code, out = run_cmd(["sudo", "systemctl", "start", service])
             if code != 0:
                 print_error(t("msg.service_start_failed", service=service))
                 return False
@@ -190,7 +185,7 @@ class DeviceInitializer(Tool):
         if self._is_enabled(service):
             print_info(t("msg.service_already_enabled", service=service))
         else:
-            code, _ = _run_cmd(["sudo", "systemctl", "enable", service])
+            code, _ = run_cmd(["sudo", "systemctl", "enable", service])
             if code != 0:
                 print_error(t("msg.service_enable_failed", service=service))
                 return False

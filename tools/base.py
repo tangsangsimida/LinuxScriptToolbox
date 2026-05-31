@@ -8,5 +8,10 @@ class Tool(ABC):
     distros: list[str]
 
     @abstractmethod
-    def run(self) -> bool:
+    def run(self) -> bool | None:
+        """Run the tool.
+
+        Returns:
+            True/False to show "press enter" prompt, None to skip it.
+        """
         ...

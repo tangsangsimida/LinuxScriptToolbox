@@ -4,6 +4,7 @@ from pathlib import Path
 from tools.base import Tool
 from utils.sudo_utils import write_file, copy_file, need_sudo
 from utils.i18n import t
+from utils.ui import print_success, print_error, print_info
 
 SOURCES_LIST = Path("/etc/apt/sources.list")
 DEB822_SOURCES = Path("/etc/apt/sources.list.d/ubuntu.sources")
@@ -129,24 +130,24 @@ class DebianMirrorOptimizer(Tool):
 
     # --- main ---
 
-    def run(self) -> bool:
+    def run(self) -> bool | None:
         sources_path = self._get_sources_path()
         if sources_path is None:
-            print(t("msg.sources_list_not_found"))
+            print_error(t("msg.sources_list_not_found"))
             return False
 
         is_deb822 = sources_path == DEB822_SOURCES
         fmt = "deb822" if is_deb822 else "traditional"
-        print(t("msg.detected_format", format=fmt, path=str(sources_path)))
+        print_info(t("msg.detected_format", format=fmt, path=str(sources_path)))
 
         if need_sudo(sources_path):
-            print(t("msg.root_required"))
+            print_info(t("msg.root_required"))
 
         backed_up = self.backup(sources_path)
         if backed_up:
-            print(t("msg.backup_saved", path=f"{sources_path}{BACKUP_SUFFIX}"))
+            print_info(t("msg.backup_saved", path=f"{sources_path}{BACKUP_SUFFIX}"))
         else:
-            print(t("msg.backup_exists"))
+            print_info(t("msg.backup_exists"))
 
         content = sources_path.read_text()
         if is_deb822:
@@ -155,5 +156,5 @@ class DebianMirrorOptimizer(Tool):
             new_content = self.optimize_traditional(content)
 
         write_file(sources_path, new_content)
-        print(t("msg.sources_list_updated"))
+        print_success(t("msg.sources_list_updated"))
         return True

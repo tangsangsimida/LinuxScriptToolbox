@@ -1,7 +1,7 @@
-import subprocess
 from pathlib import Path
 
 from tools.base import Tool
+from utils.cmd_utils import run_verbose
 from utils.distro import detect_distro
 from utils.i18n import t
 from utils.ui import print_success, print_error, print_info, console, prompt_selection, BACK_ACTION
@@ -37,11 +37,6 @@ SETUP_OPTIONS = [
 ]
 
 
-def _run_verbose(cmd: list[str], **kwargs) -> int:
-    result = subprocess.run(cmd, **kwargs)
-    return result.returncode
-
-
 class ShorinSetup(Tool):
     name = "shorin-setup"
     display_name = "Shorin Arch Setup"
@@ -54,7 +49,7 @@ class ShorinSetup(Tool):
             shutil.rmtree(SHORIN_DIR)
 
         print_info(t("msg.cloning", repo="shorin-arch-setup"))
-        code = _run_verbose(["git", "clone", "--depth", "1", SHORIN_REPO, str(SHORIN_DIR)])
+        code = run_verbose(["git", "clone", "--depth", "1", SHORIN_REPO, str(SHORIN_DIR)])
         if code != 0:
             print_error(t("msg.clone_failed", repo="shorin-arch-setup"))
             return False
@@ -70,7 +65,7 @@ class ShorinSetup(Tool):
         print_info(t("msg.running_script", script=script_path))
         # Make executable and run
         full_path.chmod(0o755)
-        code = _run_verbose(["bash", str(full_path)])
+        code = run_verbose(["bash", str(full_path)])
         return code == 0
 
     def _run_ubuntu_setup(self, option_key: str) -> bool:
@@ -80,10 +75,10 @@ class ShorinSetup(Tool):
         # Add PPAs
         for ppa in ["ppa:avengemedia/danklinux", "ppa:avengemedia/dms"]:
             print_info(t("msg.adding_ppa", ppa=ppa))
-            _run_verbose(["sudo", "add-apt-repository", "-y", ppa])
+            run_verbose(["sudo", "add-apt-repository", "-y", ppa])
 
         print_info(t("msg.apt_update"))
-        _run_verbose(["sudo", "apt-get", "update", "-qq"])
+        run_verbose(["sudo", "apt-get", "update", "-qq"])
 
         if option_key == "niri":
             pkgs = ["niri"]
@@ -98,7 +93,7 @@ class ShorinSetup(Tool):
 
         for pkg in pkgs:
             print_info(t("msg.installing", package=pkg))
-            ok = _run_verbose(["sudo", "apt-get", "install", "-y", pkg])
+            ok = run_verbose(["sudo", "apt-get", "install", "-y", pkg])
             if ok != 0:
                 print_error(t("msg.install_failed", package=pkg))
                 return False
@@ -106,7 +101,7 @@ class ShorinSetup(Tool):
 
         return True
 
-    def run(self) -> bool:
+    def run(self) -> bool | None:
         distro = detect_distro()
 
         choice = prompt_selection(t("msg.shorin_select"), SETUP_OPTIONS)

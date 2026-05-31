@@ -1,9 +1,8 @@
-import subprocess
-
 from tools.base import Tool
+from utils.cmd_utils import run_cmd, run_verbose
 from utils.distro import detect_distro
 from utils.i18n import t
-from utils.ui import print_success, print_error, print_info, ask, console, prompt_selection, BACK_ACTION
+from utils.ui import print_success, print_error, print_info, console, prompt_selection, BACK_ACTION
 
 TOOLCHAIN_OPTIONS = [
     {
@@ -23,25 +22,20 @@ TOOLCHAIN_OPTIONS = [
 ]
 
 
-def _run_verbose(cmd: list[str]) -> int:
-    result = subprocess.run(cmd)
-    return result.returncode
-
-
 def _is_installed(pkg: str, distro: str) -> bool:
-    if distro == "arch":
-        return subprocess.run(["pacman", "-Qi", pkg], capture_output=True).returncode == 0
-    return subprocess.run(["dpkg", "-s", pkg], capture_output=True).returncode == 0
+    cmd = ["pacman", "-Qi", pkg] if distro == "arch" else ["dpkg", "-s", pkg]
+    code, _ = run_cmd(cmd)
+    return code == 0
 
 
 def _install_packages(pkgs: list[str], distro: str) -> bool:
     if distro == "arch":
-        code = _run_verbose(["sudo", "pacman", "-S", "--noconfirm"] + pkgs)
+        code = run_verbose(["sudo", "pacman", "-S", "--noconfirm"] + pkgs)
     else:
-        if _run_verbose(["sudo", "apt-get", "update", "-qq"]) != 0:
+        if run_verbose(["sudo", "apt-get", "update", "-qq"]) != 0:
             print_error(t("msg.devtool_install_failed"))
             return False
-        code = _run_verbose(["sudo", "apt-get", "install", "-y"] + pkgs)
+        code = run_verbose(["sudo", "apt-get", "install", "-y"] + pkgs)
     return code == 0
 
 
@@ -68,7 +62,7 @@ class DevToolsSetup(Tool):
         print_success(t("msg.devtool_install_success", toolchain=t(option["name_key"])))
         return True
 
-    def run(self) -> bool:
+    def run(self) -> bool | None:
         distro = detect_distro()
 
         choice = prompt_selection(t("msg.devtool_select"), TOOLCHAIN_OPTIONS)

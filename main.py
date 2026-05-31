@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """LinuxScriptToolbox - Quick tools for various Linux distributions."""
 
+import argparse
 import os
 import subprocess
 import sys
@@ -60,11 +61,50 @@ ensure_venv()
 from utils.distro import detect_distro
 from utils.ui import (
     show_header, show_tool_header, print_success, print_error,
-    print_info, print_running, ask, console, select_tool, select_option,
+    print_info, console, select_tool, select_option,
     press_any_key,
 )
 from tools import get_tools_for_distro, TOOLS
-from utils.i18n import t, set_lang, get_lang, SUPPORTED_LANGS
+from utils.i18n import t, set_lang, get_lang, SUPPORTED_LANGS, tool_display_name, tool_description
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="LinuxScriptToolbox - Quick tools for various Linux distributions"
+    )
+    parser.add_argument(
+        "--lang", choices=list(SUPPORTED_LANGS.keys()),
+        help="Set language (en/zh)"
+    )
+    parser.add_argument(
+        "--tool", metavar="NAME",
+        help="Run a specific tool by name and exit (e.g. device-init, dev-tools)"
+    )
+    parser.add_argument(
+        "--list-tools", action="store_true",
+        help="List available tools and exit"
+    )
+    return parser.parse_args()
+
+
+def find_tool(name: str):
+    """Find a tool by its name attribute."""
+    for tool in TOOLS:
+        if tool.name == name:
+            return tool
+    return None
+
+
+def list_tools():
+    """Print all available tools."""
+    distro = detect_distro()
+    tools = get_tools_for_distro(distro)
+    if not tools:
+        print(t("ui.no_tools"))
+        return
+    for tool in tools:
+        print(f"  {tool.name:24s} {tool_display_name(tool)}")
+        print(f"  {'':24s} {tool_description(tool)}")
 
 
 def select_language():
@@ -76,8 +116,30 @@ def select_language():
 
 
 def main():
-    distro = detect_distro()
+    args = parse_args()
 
+    if args.lang:
+        set_lang(args.lang)
+
+    if args.list_tools:
+        list_tools()
+        return
+
+    if args.tool:
+        tool = find_tool(args.tool)
+        if tool is None:
+            print_error(f"Tool not found: {args.tool}")
+            print_info(f"Available: {', '.join(t.name for t in TOOLS)}")
+            sys.exit(1)
+        show_tool_header(tool_display_name(tool))
+        result = tool.run()
+        if result is not None:
+            console.print()
+            press_any_key()
+        return
+
+    # Interactive mode
+    distro = detect_distro()
     tools_to_run = get_tools_for_distro(distro)
 
     while True:
@@ -94,13 +156,11 @@ def main():
             select_language()
         elif choice == -1:  # run all
             for tool in tools_to_run:
-                from utils.i18n import tool_display_name
                 show_tool_header(tool_display_name(tool))
                 tool.run()
             console.print()
             press_any_key()
         elif 0 <= choice < len(tools_to_run):
-            from utils.i18n import tool_display_name
             show_tool_header(tool_display_name(tools_to_run[choice]))
             result = tools_to_run[choice].run()
             if result is not None:

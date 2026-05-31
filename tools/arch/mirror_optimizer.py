@@ -1,9 +1,9 @@
-import shutil
 from pathlib import Path
 
 from tools.base import Tool
 from utils.sudo_utils import write_file, copy_file, need_sudo
 from utils.i18n import t
+from utils.ui import print_success, print_error, print_info
 
 MIRRORLIST = Path("/etc/pacman.d/mirrorlist")
 BACKUP_SUFFIX = ".bak"
@@ -35,7 +35,6 @@ class ArchMirrorOptimizer(Tool):
         backup_path = MIRRORLIST.with_suffix(MIRRORLIST.suffix + BACKUP_SUFFIX)
         if not backup_path.exists():
             raise FileNotFoundError("No backup found")
-        from utils.sudo_utils import copy_file
         copy_file(backup_path, MIRRORLIST)
 
     def build_mirrorlist(self) -> str:
@@ -51,21 +50,21 @@ class ArchMirrorOptimizer(Tool):
     def apply(self, content: str) -> None:
         write_file(MIRRORLIST, content)
 
-    def run(self) -> bool:
+    def run(self) -> bool | None:
         if not MIRRORLIST.exists():
-            print(t("msg.mirrorlist_not_found"))
+            print_error(t("msg.mirrorlist_not_found"))
             return False
 
         if need_sudo(MIRRORLIST):
-            print(t("msg.root_required"))
+            print_info(t("msg.root_required"))
 
         backed_up = self.backup()
         if backed_up:
-            print(t("msg.backup_saved", path=f"{MIRRORLIST}{BACKUP_SUFFIX}"))
+            print_info(t("msg.backup_saved", path=f"{MIRRORLIST}{BACKUP_SUFFIX}"))
         else:
-            print(t("msg.backup_exists"))
+            print_info(t("msg.backup_exists"))
 
         content = self.build_mirrorlist()
         self.apply(content)
-        print(t("msg.mirrorlist_updated"))
+        print_success(t("msg.mirrorlist_updated"))
         return True

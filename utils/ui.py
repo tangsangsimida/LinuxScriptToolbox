@@ -1,11 +1,10 @@
 import os
 import sys
-from typing import Optional, Callable, Any
+from typing import Optional
 
 import questionary
 from rich.console import Console
 from rich.panel import Panel
-from rich.table import Table
 from rich.text import Text
 from rich.prompt import Prompt
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
@@ -87,36 +86,6 @@ def show_header(distro: str, lang: str = None):
     console.print()
 
 
-def show_menu(tools: list) -> int:
-    console.print(f"  [bold]{t('ui.available_tools')}[/bold]")
-    console.print()
-
-    if not tools:
-        console.print(f"  [dim]{t('ui.no_tools')}[/dim]")
-    else:
-        table = Table(
-            show_header=True,
-            header_style="bold magenta",
-            box=box.SIMPLE_HEAVY,
-            padding=(0, 1),
-            expand=False,
-        )
-        table.add_column("#", style="bold yellow", justify="right")
-        table.add_column("Tool", style="bold cyan")
-        table.add_column("Description", style="dim")
-
-        for i, tool in enumerate(tools, 1):
-            table.add_row(str(i), tool_display_name(tool), tool_description(tool))
-
-        console.print(table)
-
-    console.print()
-    console.print(f"  [[bold yellow]a[/bold yellow]] {t('ui.run_all')}    "
-                  f"[[bold yellow]l[/bold yellow]] {t('ui.language')}    "
-                  f"[[bold yellow]q[/bold yellow]] {t('ui.quit')}")
-    console.print()
-    return len(tools)
-
 
 def select_tool(tools: list) -> Optional[int]:
     """Interactive tool selection using questionary.
@@ -194,14 +163,13 @@ def _group_tools(tools: list) -> dict:
     """Group tools by their distro category."""
     groups = {}
     for i, tool in enumerate(tools):
-        # Determine group from tool module path
         module = type(tool).__module__
         if "common" in module:
-            group = t("ui.group_common") if "ui.group_common" in _get_translations() else "Common"
+            group = t("ui.group_common")
         elif "arch" in module:
-            group = t("ui.group_arch") if "ui.group_arch" in _get_translations() else "Arch Linux"
+            group = t("ui.group_arch")
         elif "debian" in module:
-            group = t("ui.group_debian") if "ui.group_debian" in _get_translations() else "Debian"
+            group = t("ui.group_debian")
         else:
             group = "Other"
 
@@ -210,13 +178,6 @@ def _group_tools(tools: list) -> dict:
         groups[group].append((i, tool))
 
     return groups
-
-
-def _get_translations() -> dict:
-    """Get current language translations."""
-    from utils.i18n import TRANSLATIONS, get_lang
-    lang = get_lang()
-    return TRANSLATIONS.get(lang, TRANSLATIONS.get("en", {}))
 
 
 def _select_tool_fallback(tools: list) -> Optional[int]:

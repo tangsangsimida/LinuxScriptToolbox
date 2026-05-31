@@ -167,7 +167,7 @@ class QuickFixes(Tool):
         print_info(t("msg.qfix_usage_hint", wrapper=str(wrapper_path)))
         return True
 
-    def run(self) -> bool:
+    def run(self) -> bool | None:
         choice = prompt_selection(t("msg.qfix_select"), FIX_OPTIONS)
 
         if choice is None or choice == BACK_ACTION:
