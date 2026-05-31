@@ -105,6 +105,7 @@ def select_tool(tools: list) -> Optional[int]:
 
     # Build choices with tool info
     choices = []
+    num = 0
 
     # Group tools by category
     groups = _group_tools(tools)
@@ -112,11 +113,12 @@ def select_tool(tools: list) -> Optional[int]:
         if len(groups) > 1:  # Only show headers if multiple groups
             choices.append(questionary.Separator(f"  {group_name}"))
         for i, tool in group_tools:
+            num += 1
             name = tool_display_name(tool)
             desc = tool_description(tool)
             choices.append(
                 questionary.Choice(
-                    title=f"{name} — {desc}",
+                    title=f"[{num}] {name} — {desc}",
                     value=i,
                 )
             )
@@ -124,15 +126,15 @@ def select_tool(tools: list) -> Optional[int]:
     # Add separator and special actions
     choices.append(questionary.Separator())
     choices.append(questionary.Choice(
-        title=f"[{t('ui.run_all')}]",
+        title=f"[a] {t('ui.run_all')}",
         value=-1,
     ))
     choices.append(questionary.Choice(
-        title=f"[{t('ui.language')}]",
+        title=f"[l] {t('ui.language')}",
         value=-2,
     ))
     choices.append(questionary.Choice(
-        title=f"[{t('ui.quit')}]",
+        title=f"[q] {t('ui.quit')}",
         value=-3,
     ))
 
