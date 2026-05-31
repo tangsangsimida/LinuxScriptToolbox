@@ -17,6 +17,10 @@ from utils.i18n import t, tool_display_name, tool_description
 
 console = Console()
 
+# ── UI Constants ───────────────────────────────────────────────
+BACK_ACTION = "back"  # Constant for back/cancel action
+CANCEL_ACTION = None  # Constant for cancel (Ctrl+C, ESC)
+
 # ── Theme configuration ────────────────────────────────────────
 THEME = {
     "primary": "cyan",
@@ -285,6 +289,32 @@ def ask(prompt: str, **kwargs) -> str:
     return Prompt.ask(f"  [bold cyan]▸[/bold cyan] {prompt}", **kwargs)
 
 
+def confirm(message: str, default: bool = False) -> bool:
+    """Yes/no confirmation dialog.
+
+    Args:
+        message: Question to ask
+        default: Default answer (True=yes, False=no)
+
+    Returns:
+        True if user confirmed, False otherwise
+    """
+    if not IS_TTY:
+        suffix = " [Y/n]" if default else " [y/N]"
+        try:
+            choice = input(f"  {message}{suffix}: ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            return False
+        if not choice:
+            return default
+        return choice in ("y", "yes")
+
+    try:
+        return questionary.confirm(message, default=default).ask() or False
+    except KeyboardInterrupt:
+        return False
+
+
 def select_option(message: str, options: list[tuple[str, str]], default: str = None) -> Optional[str]:
     """Interactive option selection using questionary.
 
@@ -344,6 +374,32 @@ def _select_option_fallback(message: str, options: list[tuple[str, str]], defaul
         pass
 
     return None
+
+
+def prompt_selection(message: str, options: list[dict], show_back: bool = True) -> Optional[str]:
+    """Unified sub-menu selection for tool classes.
+
+    Args:
+        message: Prompt message
+        options: List of dicts with 'id', 'name_key', 'desc_key' keys
+        show_back: Whether to show "Back" option (returns BACK_ACTION)
+
+    Returns:
+        Selected option id, BACK_ACTION if user chose back, or CANCEL_ACTION if cancelled
+    """
+    # Build options list
+    select_options = []
+    for opt in options:
+        name = t(opt["name_key"])
+        desc = t(opt.get("desc_key", "")) if opt.get("desc_key") else ""
+        label = f"{name} — {desc}" if desc else name
+        select_options.append((opt["id"], label))
+
+    if show_back:
+        select_options.append((BACK_ACTION, f"[{t('ui.back')}]"))
+
+    result = select_option(message, select_options)
+    return result
 
 
 def press_any_key(prompt: str = None):

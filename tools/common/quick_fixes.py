@@ -6,7 +6,7 @@ from pathlib import Path
 from tools.base import Tool
 from utils.distro import detect_distro
 from utils.i18n import t
-from utils.ui import print_success, print_error, print_info, ask, console, clear_screen
+from utils.ui import print_success, print_error, print_info, ask, console, prompt_selection, BACK_ACTION
 
 FIX_OPTIONS = [
     {
@@ -130,16 +130,6 @@ class QuickFixes(Tool):
     description = "One-click fixes for common Linux software issues"
     distros = ["arch", "debian"]
 
-    def _show_menu(self) -> str:
-        clear_screen()
-        console.print(f"\n  [bold]{t('msg.qfix_select')}[/bold]\n")
-        for i, opt in enumerate(FIX_OPTIONS, 1):
-            console.print(f"  [[bold yellow]{i}[/bold yellow]] [bold cyan]{t(opt['name_key'])}[/bold cyan]")
-            console.print(f"      [dim]{t(opt['desc_key'])}[/dim]")
-        console.print(f"  [[bold yellow]0[/bold yellow]] [dim]{t('ui.back')}[/dim]")
-        console.print()
-        return ask(t("ui.select"))
-
     def _fix_stm32cubemx_wayland(self) -> bool:
         # Step 1: Detect installation
         print_info(t("msg.qfix_detecting_path"))
@@ -178,21 +168,16 @@ class QuickFixes(Tool):
         return True
 
     def run(self) -> bool:
-        choice = self._show_menu()
+        choice = prompt_selection(t("msg.qfix_select"), FIX_OPTIONS)
 
-        if choice == "0":
+        if choice is None or choice == BACK_ACTION:
             return None
 
-        try:
-            idx = int(choice) - 1
-            if not (0 <= idx < len(FIX_OPTIONS)):
-                print_error(t("ui.invalid_selection"))
-                return False
-        except ValueError:
-            print_error(t("ui.invalid_input"))
+        selected = next((opt for opt in FIX_OPTIONS if opt["id"] == choice), None)
+        if selected is None:
+            print_error(t("ui.invalid_selection"))
             return False
 
-        selected = FIX_OPTIONS[idx]
         console.print()
 
         if selected["id"] == "stm32cubemx-wayland":

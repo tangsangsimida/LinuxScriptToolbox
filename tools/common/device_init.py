@@ -5,7 +5,7 @@ from pathlib import Path
 from tools.base import Tool
 from utils.i18n import t
 from utils.sudo_utils import write_file, copy_file
-from utils.ui import print_success, print_error, print_info, print_warning, ask
+from utils.ui import print_success, print_error, print_info, print_warning, ask, confirm
 
 DISTRO_CONFIG = {
     "arch": {"service": "sshd", "package": "openssh"},
@@ -101,8 +101,7 @@ def _open_firewall_ssh() -> None:
         return
 
     print_info(t("msg.firewall_detected", fw=fw))
-    confirm = ask(t("msg.firewall_allow_ssh") + " (y/N)", default="n").strip().lower()
-    if confirm != "y":
+    if not confirm(t("msg.firewall_allow_ssh")):
         return
 
     if fw == "ufw":
