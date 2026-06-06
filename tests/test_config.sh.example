@@ -1,0 +1,21 @@
+#!/bin/bash
+# Remote test configuration
+#
+# Priority order:
+#   1. Environment variables: TEST_HOSTS, TEST_USER, TEST_PASS
+#   2. This file (if exists)
+#
+# Environment variable format:
+#   export TEST_HOSTS="192.168.1.100,192.168.1.101"  (comma-separated)
+#   export TEST_USER="dennis"
+#   export TEST_PASS="dennis"
+
+# TEST_HOSTS: comma-separated string from env, or array from this file
+if [[ -n "$TEST_HOSTS" ]]; then
+    IFS=',' read -ra TEST_HOSTS <<< "$TEST_HOSTS"
+else
+    TEST_HOSTS=("192.168.1.100" "192.168.1.101")
+fi
+
+TEST_USER="${TEST_USER:-your_username}"
+TEST_PASS="${TEST_PASS:-your_password}"

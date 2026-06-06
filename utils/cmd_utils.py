@@ -20,6 +20,31 @@ def run_cmd(cmd: list[str], timeout: int = DEFAULT_TIMEOUT) -> tuple[int, str]:
         return TIMEOUT_EXIT_CODE, ""
 
 
+def run_cmd_with_stdin(cmd: list[str], input_data: str, timeout: int = DEFAULT_TIMEOUT) -> tuple[int, str]:
+    """Run a command with stdin input and capture output.
+
+    Args:
+        cmd: Command to run as a list of strings.
+        input_data: Data to send to stdin.
+        timeout: Timeout in seconds.
+
+    Returns:
+        (returncode, stdout_stripped). Returns (TIMEOUT_EXIT_CODE, "")
+        if the command exceeds the timeout.
+    """
+    try:
+        result = subprocess.run(
+            cmd,
+            input=input_data,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        return result.returncode, result.stdout.strip()
+    except subprocess.TimeoutExpired:
+        return TIMEOUT_EXIT_CODE, ""
+
+
 def run_verbose(cmd: list[str], timeout: int = DEFAULT_TIMEOUT) -> int:
     """Run a command with live output (inherits parent stdio).
 
@@ -28,6 +53,29 @@ def run_verbose(cmd: list[str], timeout: int = DEFAULT_TIMEOUT) -> int:
     """
     try:
         result = subprocess.run(cmd, timeout=timeout)
+        return result.returncode
+    except subprocess.TimeoutExpired:
+        return TIMEOUT_EXIT_CODE
+
+
+def run_verbose_with_stdin(cmd: list[str], input_data: str, timeout: int = DEFAULT_TIMEOUT) -> int:
+    """Run a command with stdin input and live output (inherits parent stdio).
+
+    Args:
+        cmd: Command to run as a list of strings.
+        input_data: Data to send to stdin.
+        timeout: Timeout in seconds.
+
+    Returns:
+        returncode. Returns TIMEOUT_EXIT_CODE if the command exceeds the timeout.
+    """
+    try:
+        result = subprocess.run(
+            cmd,
+            input=input_data,
+            text=True,
+            timeout=timeout,
+        )
         return result.returncode
     except subprocess.TimeoutExpired:
         return TIMEOUT_EXIT_CODE

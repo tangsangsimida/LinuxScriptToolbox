@@ -1,10 +1,11 @@
+import shutil
 from pathlib import Path
 
 from tools.base import Tool
 from utils.cmd_utils import run_verbose
 from utils.distro import detect_distro
 from utils.i18n import t
-from utils.ui import print_success, print_error, print_info, console, prompt_selection, BACK_ACTION
+from utils.ui import print_success, print_error, print_info, print_warning, console, prompt_selection, BACK_ACTION
 
 SHORIN_REPO = "https://github.com/SHORiN-KiWATA/shorin-arch-setup.git"
 SHORIN_DIR = Path("/tmp/shorin-arch-setup")
@@ -41,11 +42,10 @@ class ShorinSetup(Tool):
     name = "shorin-setup"
     display_name = "Shorin Arch Setup"
     description = "Clone and run shorin-arch-setup scripts for desktop environment configuration"
-    distros = ["arch", "debian"]
+    distros = ["arch", "debian", "fedora", "suse"]
 
     def _clone_repo(self) -> bool:
         if SHORIN_DIR.exists():
-            import shutil
             shutil.rmtree(SHORIN_DIR)
 
         print_info(t("msg.cloning", repo="shorin-arch-setup"))
@@ -101,6 +101,59 @@ class ShorinSetup(Tool):
 
         return True
 
+    def _run_fedora_setup(self, option_key: str) -> bool:
+        """Run adapted setup for Fedora."""
+        print_info(t("msg.shorin_fedora_mode"))
+
+        if option_key == "niri":
+            pkgs = ["niri"]
+        elif option_key == "dms":
+            print_warning(t("msg.shorin_dms_manual"))
+            return False
+        elif option_key == "kde":
+            pkgs = ["@kde-desktop", "sddm"]
+        elif option_key == "gnome":
+            pkgs = ["@workstation-product", "gdm"]
+        else:
+            return False
+
+        for pkg in pkgs:
+            print_info(t("msg.installing", package=pkg))
+            ok = run_verbose(["sudo", "dnf", "install", "-y", pkg])
+            if ok != 0:
+                print_error(t("msg.install_failed", package=pkg))
+                return False
+            print_success(t("msg.install_success", package=pkg))
+
+        return True
+
+    def _run_suse_setup(self, option_key: str) -> bool:
+        """Run adapted setup for openSUSE."""
+        print_info(t("msg.shorin_suse_mode"))
+
+        if option_key == "niri":
+            print_warning(t("msg.shorin_niri_not_available"))
+            return False
+        elif option_key == "dms":
+            print_warning(t("msg.shorin_dms_manual"))
+            return False
+        elif option_key == "kde":
+            pkgs = ["patterns-kde-kde_plasma", "sddm"]
+        elif option_key == "gnome":
+            pkgs = ["patterns-gnome-gnome", "gdm"]
+        else:
+            return False
+
+        for pkg in pkgs:
+            print_info(t("msg.installing", package=pkg))
+            ok = run_verbose(["sudo", "zypper", "install", "-y", pkg])
+            if ok != 0:
+                print_error(t("msg.install_failed", package=pkg))
+                return False
+            print_success(t("msg.install_success", package=pkg))
+
+        return True
+
     def run(self) -> bool | None:
         distro = detect_distro()
 
@@ -122,5 +175,9 @@ class ShorinSetup(Tool):
 
         if distro == "arch":
             return self._run_arch_setup(selected["script"])
+        elif distro == "fedora":
+            return self._run_fedora_setup(selected["id"])
+        elif distro == "suse":
+            return self._run_suse_setup(selected["id"])
         else:
             return self._run_ubuntu_setup(selected["id"])

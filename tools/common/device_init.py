@@ -12,6 +12,8 @@ from utils.ui import print_success, print_error, print_info, print_warning, conf
 DISTRO_CONFIG = {
     "arch": {"service": "sshd", "package": "openssh"},
     "debian": {"service": "ssh", "package": "openssh-server"},
+    "fedora": {"service": "sshd", "package": "openssh-server"},
+    "suse": {"service": "sshd", "package": "openssh"},
 }
 
 PYTHON_SYMLINK = Path("/usr/local/bin/python")
@@ -119,6 +121,8 @@ class DeviceInitializer(Tool):
     def _is_installed(self, package: str) -> bool:
         if run_cmd(["which", "pacman"])[0] == 0:
             code, _ = run_cmd(["pacman", "-Qi", package])
+        elif run_cmd(["which", "rpm"])[0] == 0:
+            code, _ = run_cmd(["rpm", "-q", package])
         else:
             code, _ = run_cmd(["dpkg", "-s", package])
         return code == 0
@@ -127,6 +131,10 @@ class DeviceInitializer(Tool):
         print_info(t("msg.installing", package=package))
         if distro == "arch":
             code = run_verbose(["sudo", "pacman", "-S", "--noconfirm", package])
+        elif distro == "fedora":
+            code = run_verbose(["sudo", "dnf", "install", "-y", package])
+        elif distro == "suse":
+            code = run_verbose(["sudo", "zypper", "install", "-y", package])
         else:
             code = run_verbose(["sudo", "apt-get", "install", "-y", package])
         return code == 0

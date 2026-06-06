@@ -1,0 +1,23 @@
+"""Remote test configuration.
+
+Priority order:
+  1. Environment variables: TEST_HOSTS, TEST_USER, TEST_PASS
+  2. This file (if exists)
+
+Environment variable format:
+  TEST_HOSTS="192.168.1.100,192.168.1.101"  (comma-separated)
+  TEST_USER="dennis"
+  TEST_PASS="dennis"
+"""
+
+import os
+
+# TEST_HOSTS: comma-separated string from env, or list from this file
+_env_hosts = os.environ.get("TEST_HOSTS")
+TEST_HOSTS = _env_hosts.split(",") if _env_hosts else [
+    "192.168.1.100",
+    "192.168.1.101",
+]
+
+TEST_USER = os.environ.get("TEST_USER", "your_username")
+TEST_PASS = os.environ.get("TEST_PASS", "your_password")

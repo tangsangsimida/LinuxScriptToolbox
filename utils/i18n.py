@@ -1,3 +1,20 @@
+"""Internationalization (i18n) module for LinuxScriptToolbox.
+
+This module provides translation support for English and Chinese.
+
+Translation Key Conventions:
+- UI elements: "ui.<element>"
+- Tool display names: "tool.<tool-name>.display_name"
+- Tool descriptions: "tool.<tool-name>.description"
+- Messages: "msg.<category>_<message>"
+- Group names: "ui.group_<group>"
+
+Sections:
+- UI: General interface elements
+- Tools: Tool display names and descriptions
+- Messages: Tool-specific messages (grouped by tool)
+"""
+
 import json
 from pathlib import Path
 
@@ -7,7 +24,9 @@ SUPPORTED_LANGS = {"en": "English", "zh": "中文"}
 
 TRANSLATIONS: dict[str, dict[str, str]] = {
     "en": {
-        # UI
+        # ============================================================
+        # UI Elements
+        # ============================================================
         "ui.available_tools": "Available tools:",
         "ui.run_all": "Run all tools",
         "ui.language": "Language",
@@ -26,6 +45,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ui.group_common": "Common",
         "ui.group_arch": "Arch Linux",
         "ui.group_debian": "Debian/Ubuntu",
+        "ui.group_fedora": "Fedora",
+        "ui.group_suse": "openSUSE",
         # Tools
         "tool.mirror-optimizer.display_name": "Optimize Mirrors",
         "tool.mirror-optimizer.description": "Replace package manager mirrors with China mirrors (supports any distro)",
@@ -39,7 +60,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tool.shorin-setup.description": "Clone and run shorin-arch-setup for desktop environment configuration",
         "tool.ai-cli-setup.display_name": "AI CLI Setup",
         "tool.ai-cli-setup.description": "One-click install AI coding assistant CLIs (Claude Code, Codex, Gemini, OpenCode)",
-        # Messages
+
+        # ============================================================
+        # Messages — Common (shared across tools)
+        # ============================================================
         "msg.backup_saved": "Backup saved to {path}",
         "msg.backup_exists": "Backup already exists, skipped",
         "msg.mirrorlist_updated": "Mirrorlist updated with China mirrors at top",
@@ -90,7 +114,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.firewall_allow_ssh": "Allow SSH through firewall?",
         "msg.firewall_rule_added": "Firewall rule added: allow SSH (port 22).",
         "msg.apt_update": "Updating package lists...",
-        # Dev Tools
+
+        # ============================================================
+        # Messages — Dev Tools
+        # ============================================================
         "msg.devtool_select": "Select toolchain to install:",
         "msg.devtool_arm_gcc": "ARM GCC Toolchain",
         "msg.devtool_arm_gcc_desc": "Install arm-none-eabi-gcc for ARM Cortex-R/M embedded development",
@@ -102,7 +129,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.devtool_already_installed": "{toolchain} is already installed.",
         "msg.devtool_install_success": "{toolchain} installed successfully.",
         "msg.devtool_install_failed": "Failed to install toolchain.",
-        # Quick Fixes
+
+        # ============================================================
+        # Messages — Quick Fixes
+        # ============================================================
         "msg.qfix_select": "Select a fix to apply:",
         "msg.qfix_stm32cubemx": "STM32CubeMX Wayland Fix",
         "msg.qfix_stm32cubemx_desc": "Fix blank popup/dialog windows in STM32CubeMX on Wayland",
@@ -120,7 +150,42 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.qfix_success": "Fix applied successfully!",
         "msg.qfix_usage_hint": "You can run STM32CubeMX via: {wrapper}",
         "msg.qfix_not_implemented": "This fix is not yet implemented.",
-        # Shorin
+        # Git Proxy Fix
+        "msg.qfix_git_proxy": "Git Proxy Configuration",
+        "msg.qfix_git_proxy_desc": "Configure Git HTTP/HTTPS proxy settings",
+        "msg.qfix_git_proxy_configuring": "Configuring Git proxy...",
+        "msg.qfix_git_proxy_current": "Current proxy settings: HTTP={http}, HTTPS={https}",
+        "msg.qfix_git_proxy_overwrite": "Overwrite existing proxy settings?",
+        "msg.qfix_git_proxy_enter": "Enter proxy URL (e.g., http://proxy:8080): ",
+        "msg.qfix_git_proxy_empty": "No proxy URL entered, cancelled.",
+        "msg.qfix_git_proxy_set": "Git proxy set to: {proxy}",
+        # npm Permissions Fix
+        "msg.qfix_npm_permissions": "npm Global Permissions Fix",
+        "msg.qfix_npm_permissions_desc": "Fix npm global directory permissions for current user",
+        "msg.qfix_npm_configuring": "Configuring npm global directory...",
+        "msg.qfix_npm_not_found": "npm is not installed.",
+        "msg.qfix_npm_prefix_failed": "Failed to get npm prefix.",
+        "msg.qfix_npm_already_ok": "npm global directory is already user-owned.",
+        "msg.qfix_npm_creating": "Creating user npm directory: {dir}",
+        "msg.qfix_npm_create_failed": "Failed to create npm directory: {error}",
+        "msg.qfix_npm_updating_profile": "Updating shell profile: {profile}",
+        "msg.qfix_npm_success": "npm global directory configured: {dir}",
+        "msg.qfix_npm_reload_hint": "Run 'source ~/.bashrc' or restart your shell to apply changes.",
+        # Docker Group Fix
+        "msg.qfix_docker_group": "Docker Group Fix",
+        "msg.qfix_docker_group_desc": "Add current user to docker group",
+        "msg.qfix_docker_configuring": "Configuring Docker group...",
+        "msg.qfix_docker_not_found": "Docker is not installed.",
+        "msg.qfix_docker_already_in_group": "User '{user}' is already in docker group.",
+        "msg.qfix_docker_creating_group": "Creating docker group...",
+        "msg.qfix_docker_adding_user": "Adding user '{user}' to docker group...",
+        "msg.qfix_docker_add_failed": "Failed to add user to docker group.",
+        "msg.qfix_docker_success": "User '{user}' added to docker group.",
+        "msg.qfix_docker_logout_hint": "Please log out and log back in for changes to take effect.",
+
+        # ============================================================
+        # Messages — Shorin Setup
+        # ============================================================
         "msg.cloning": "Cloning {repo}...",
         "msg.clone_failed": "Failed to clone {repo}.",
         "msg.shorin_select": "Select Shorin setup option:",
@@ -135,11 +200,17 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.script_not_found": "Script not found: {script}",
         "msg.running_script": "Running {script}...",
         "msg.shorin_ubuntu_mode": "Ubuntu mode: using adapted setup...",
+        "msg.shorin_fedora_mode": "Fedora mode: using adapted setup...",
+        "msg.shorin_suse_mode": "openSUSE mode: using adapted setup...",
         "msg.shorin_dms_download": "Downloading DMS...",
-        "msg.shorin_dms_manual": "DMS not available via PPA, install manually.",
+        "msg.shorin_dms_manual": "DMS not available for this distro, install manually.",
         "msg.shorin_build_quickshell": "Building quickshell from source...",
+        "msg.shorin_niri_not_available": "Niri is not available for this distro.",
         "msg.selected_desktop": "Selected: {de}",
-        # AI CLI Setup
+
+        # ============================================================
+        # Messages — AI CLI Setup
+        # ============================================================
         "msg.ai_cli_select": "Select AI CLI to install:",
         "msg.ai_cli_claude": "Claude Code",
         "msg.ai_cli_claude_desc": "Anthropic's AI coding assistant (claude-code)",
@@ -175,6 +246,83 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.ai_cli_none_installed": "No AI CLI tools are currently installed.",
         "msg.ai_cli_update_all": "Update All Installed",
         "msg.ai_cli_update_all_desc": "Update all installed AI CLI tools",
+
+        # ============================================================
+        # Messages — System Cleanup
+        # ============================================================
+        "msg.cleanup_select": "Select cleanup option:",
+        "msg.cleanup_pkg_cache": "Package Cache",
+        "msg.cleanup_pkg_cache_desc": "Clean package manager cache",
+        "msg.cleanup_journal": "Journal Logs",
+        "msg.cleanup_journal_desc": "Clean systemd journal logs older than 7 days",
+        "msg.cleanup_temp": "Temporary Files",
+        "msg.cleanup_temp_desc": "Clean temporary files and user cache",
+        "msg.cleanup_all": "All Cleanup",
+        "msg.cleanup_all_desc": "Run all cleanup operations",
+        "msg.cleanup_pkg_cache_running": "Cleaning package cache...",
+        "msg.cleanup_pkg_cache_success": "Package cache cleaned successfully.",
+        "msg.cleanup_pkg_cache_failed": "Failed to clean package cache.",
+        "msg.cleanup_journal_running": "Cleaning journal logs...",
+        "msg.cleanup_journal_size": "Current journal size: {size}",
+        "msg.cleanup_journal_not_found": "journalctl not found, skipping.",
+        "msg.cleanup_journal_success": "Journal logs cleaned successfully.",
+        "msg.cleanup_journal_failed": "Failed to clean journal logs.",
+        "msg.cleanup_temp_running": "Cleaning temporary files...",
+        "msg.cleanup_temp_partial": "Some temporary files could not be deleted.",
+        "msg.cleanup_temp_cache_size": "User cache size: {size}",
+        "msg.cleanup_temp_success": "Temporary files cleaned successfully.",
+        "msg.cleanup_temp_error": "Error cleaning cache: {error}",
+        "msg.cleanup_temp_no_cache": "No user cache directory found.",
+
+        # ============================================================
+        # Messages — System Info
+        # ============================================================
+        "msg.info_select": "Select information to display:",
+        "msg.info_hardware": "Hardware Overview",
+        "msg.info_hardware_desc": "Display CPU, memory, and GPU information",
+        "msg.info_disk": "Disk Usage",
+        "msg.info_disk_desc": "Display disk usage and largest directories",
+        "msg.info_network": "Network Status",
+        "msg.info_network_desc": "Display IP addresses, DNS, and connections",
+        "msg.info_services": "Services Status",
+        "msg.info_services_desc": "Display running services and recent errors",
+        "msg.info_all": "All Information",
+        "msg.info_all_desc": "Display all system information",
+        "msg.info_hardware_running": "Hardware Information:",
+        "msg.info_disk_running": "Disk Usage:",
+        "msg.info_disk_home": "Largest directories in home:",
+        "msg.info_network_running": "Network Status:",
+        "msg.info_network_connections": "Active connections:",
+        "msg.info_services_running": "Services Status:",
+        "msg.info_services_failed": "Failed services:",
+        "msg.info_services_count": "Running services: {count}",
+        "msg.info_services_recent_errors": "Recent errors:",
+
+        # ============================================================
+        # Messages — Backup/Restore
+        # ============================================================
+        "msg.backup_select": "Select operation:",
+        "msg.backup_create": "Create Backup",
+        "msg.backup_create_desc": "Backup critical system configuration files",
+        "msg.backup_restore": "Restore Backup",
+        "msg.backup_restore_desc": "Restore configuration files from backup",
+        "msg.backup_list": "List Backups",
+        "msg.backup_list_desc": "List all available backups",
+        "msg.backup_creating": "Creating backup...",
+        "msg.backup_file_backed": "Backed up: {file}",
+        "msg.backup_file_failed": "Failed to backup {file}: {error}",
+        "msg.backup_file_not_found": "Not found: {file}",
+        "msg.backup_no_files": "No files to backup.",
+        "msg.backup_created": "Backup created: {path} ({count} files)",
+        "msg.backup_no_backups": "No backups available.",
+        "msg.backup_select_restore": "Select backup to restore:",
+        "msg.backup_not_found": "Backup not found: {path}",
+        "msg.backup_files_in_backup": "Files in backup: {count}",
+        "msg.backup_confirm_restore": "Restore selected backup?",
+        "msg.backup_file_restored": "Restored: {file}",
+        "msg.backup_restore_failed": "Failed to restore {file}: {error}",
+        "msg.backup_restored": "Restored {count} files successfully.",
+        "msg.backup_available": "Available backups:",
     },
     "zh": {
         # UI
@@ -196,6 +344,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ui.group_common": "通用",
         "ui.group_arch": "Arch Linux",
         "ui.group_debian": "Debian/Ubuntu",
+        "ui.group_fedora": "Fedora",
+        "ui.group_suse": "openSUSE",
         # Tools
         "tool.mirror-optimizer.display_name": "优化镜像源",
         "tool.mirror-optimizer.description": "将包管理器镜像源替换为中国镜像源（支持任意发行版）",
@@ -209,7 +359,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tool.shorin-setup.description": "克隆并运行 shorin-arch-setup 进行桌面环境配置",
         "tool.ai-cli-setup.display_name": "AI CLI 安装",
         "tool.ai-cli-setup.description": "一键安装 AI 编程助手 CLI（Claude Code、Codex、Gemini、OpenCode）",
-        # Messages
+
+        # ============================================================
+        # Messages — 通用（跨工具共享）
+        # ============================================================
         "msg.backup_saved": "备份已保存到 {path}",
         "msg.backup_exists": "备份已存在，已跳过",
         "msg.mirrorlist_updated": "镜像源列表已更新，中国镜像源已添加到顶部",
@@ -260,7 +413,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.firewall_allow_ssh": "是否允许 SSH 通过防火墙？",
         "msg.firewall_rule_added": "防火墙规则已添加：允许 SSH（端口 22）。",
         "msg.apt_update": "正在更新软件包列表...",
-        # Dev Tools
+
+        # ============================================================
+        # Messages — 开发工具
+        # ============================================================
         "msg.devtool_select": "选择要安装的工具链：",
         "msg.devtool_arm_gcc": "ARM GCC 工具链",
         "msg.devtool_arm_gcc_desc": "安装 arm-none-eabi-gcc，用于 ARM Cortex-R/M 嵌入式开发",
@@ -272,7 +428,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.devtool_already_installed": "{toolchain} 已安装。",
         "msg.devtool_install_success": "{toolchain} 安装成功。",
         "msg.devtool_install_failed": "工具链安装失败。",
-        # Quick Fixes
+
+        # ============================================================
+        # Messages — 快捷修复
+        # ============================================================
         "msg.qfix_select": "选择要应用的修复：",
         "msg.qfix_stm32cubemx": "STM32CubeMX Wayland 修复",
         "msg.qfix_stm32cubemx_desc": "修复 STM32CubeMX 在 Wayland 下弹窗/对话框空白问题",
@@ -290,7 +449,42 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.qfix_success": "修复已成功应用！",
         "msg.qfix_usage_hint": "可通过以下方式运行 STM32CubeMX：{wrapper}",
         "msg.qfix_not_implemented": "该修复尚未实现。",
-        # Shorin
+        # Git 代理修复
+        "msg.qfix_git_proxy": "Git 代理配置",
+        "msg.qfix_git_proxy_desc": "配置 Git HTTP/HTTPS 代理设置",
+        "msg.qfix_git_proxy_configuring": "正在配置 Git 代理...",
+        "msg.qfix_git_proxy_current": "当前代理设置：HTTP={http}，HTTPS={https}",
+        "msg.qfix_git_proxy_overwrite": "是否覆盖现有代理设置？",
+        "msg.qfix_git_proxy_enter": "输入代理 URL（例如 http://proxy:8080）：",
+        "msg.qfix_git_proxy_empty": "未输入代理 URL，已取消。",
+        "msg.qfix_git_proxy_set": "Git 代理已设置为：{proxy}",
+        # npm 权限修复
+        "msg.qfix_npm_permissions": "npm 全局权限修复",
+        "msg.qfix_npm_permissions_desc": "修复 npm 全局目录权限，使当前用户可写",
+        "msg.qfix_npm_configuring": "正在配置 npm 全局目录...",
+        "msg.qfix_npm_not_found": "npm 未安装。",
+        "msg.qfix_npm_prefix_failed": "获取 npm 前缀失败。",
+        "msg.qfix_npm_already_ok": "npm 全局目录已经是用户可写的。",
+        "msg.qfix_npm_creating": "正在创建用户 npm 目录：{dir}",
+        "msg.qfix_npm_create_failed": "创建 npm 目录失败：{error}",
+        "msg.qfix_npm_updating_profile": "正在更新 shell 配置文件：{profile}",
+        "msg.qfix_npm_success": "npm 全局目录已配置：{dir}",
+        "msg.qfix_npm_reload_hint": "运行 'source ~/.bashrc' 或重启 shell 以应用更改。",
+        # Docker 组修复
+        "msg.qfix_docker_group": "Docker 组修复",
+        "msg.qfix_docker_group_desc": "将当前用户添加到 docker 组",
+        "msg.qfix_docker_configuring": "正在配置 Docker 组...",
+        "msg.qfix_docker_not_found": "Docker 未安装。",
+        "msg.qfix_docker_already_in_group": "用户 '{user}' 已在 docker 组中。",
+        "msg.qfix_docker_creating_group": "正在创建 docker 组...",
+        "msg.qfix_docker_adding_user": "正在将用户 '{user}' 添加到 docker 组...",
+        "msg.qfix_docker_add_failed": "将用户添加到 docker 组失败。",
+        "msg.qfix_docker_success": "用户 '{user}' 已添加到 docker 组。",
+        "msg.qfix_docker_logout_hint": "请注销并重新登录以使更改生效。",
+
+        # ============================================================
+        # Messages — Shorin 环境配置
+        # ============================================================
         "msg.cloning": "正在克隆 {repo}...",
         "msg.clone_failed": "克隆 {repo} 失败。",
         "msg.shorin_select": "选择 Shorin 配置选项：",
@@ -305,11 +499,17 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.script_not_found": "脚本未找到：{script}",
         "msg.running_script": "正在运行 {script}...",
         "msg.shorin_ubuntu_mode": "Ubuntu 模式：使用适配的安装方式...",
+        "msg.shorin_fedora_mode": "Fedora 模式：使用适配的安装方式...",
+        "msg.shorin_suse_mode": "openSUSE 模式：使用适配的安装方式...",
         "msg.shorin_dms_download": "正在下载 DMS...",
-        "msg.shorin_dms_manual": "PPA 中没有 DMS，请手动安装。",
+        "msg.shorin_dms_manual": "当前发行版不支持 DMS，请手动安装。",
         "msg.shorin_build_quickshell": "正在从源码编译 quickshell...",
+        "msg.shorin_niri_not_available": "当前发行版不支持 Niri。",
         "msg.selected_desktop": "已选择：{de}",
-        # AI CLI 安装
+
+        # ============================================================
+        # Messages — AI CLI 安装
+        # ============================================================
         "msg.ai_cli_select": "选择要安装的 AI CLI：",
         "msg.ai_cli_claude": "Claude Code",
         "msg.ai_cli_claude_desc": "Anthropic 的 AI 编程助手（claude-code）",
@@ -345,6 +545,83 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.ai_cli_none_installed": "当前没有已安装的 AI CLI 工具。",
         "msg.ai_cli_update_all": "更新全部已安装",
         "msg.ai_cli_update_all_desc": "更新所有已安装的 AI CLI 工具",
+
+        # ============================================================
+        # Messages — 系统清理
+        # ============================================================
+        "msg.cleanup_select": "选择清理选项：",
+        "msg.cleanup_pkg_cache": "包缓存",
+        "msg.cleanup_pkg_cache_desc": "清理包管理器缓存",
+        "msg.cleanup_journal": "日志",
+        "msg.cleanup_journal_desc": "清理 7 天前的 systemd 日志",
+        "msg.cleanup_temp": "临时文件",
+        "msg.cleanup_temp_desc": "清理临时文件和用户缓存",
+        "msg.cleanup_all": "全部清理",
+        "msg.cleanup_all_desc": "执行所有清理操作",
+        "msg.cleanup_pkg_cache_running": "正在清理包缓存...",
+        "msg.cleanup_pkg_cache_success": "包缓存清理成功。",
+        "msg.cleanup_pkg_cache_failed": "包缓存清理失败。",
+        "msg.cleanup_journal_running": "正在清理日志...",
+        "msg.cleanup_journal_size": "当前日志大小：{size}",
+        "msg.cleanup_journal_not_found": "journalctl 未找到，跳过。",
+        "msg.cleanup_journal_success": "日志清理成功。",
+        "msg.cleanup_journal_failed": "日志清理失败。",
+        "msg.cleanup_temp_running": "正在清理临时文件...",
+        "msg.cleanup_temp_partial": "部分临时文件无法删除。",
+        "msg.cleanup_temp_cache_size": "用户缓存大小：{size}",
+        "msg.cleanup_temp_success": "临时文件清理成功。",
+        "msg.cleanup_temp_error": "清理缓存时出错：{error}",
+        "msg.cleanup_temp_no_cache": "未找到用户缓存目录。",
+
+        # ============================================================
+        # Messages — 系统信息
+        # ============================================================
+        "msg.info_select": "选择要显示的信息：",
+        "msg.info_hardware": "硬件概览",
+        "msg.info_hardware_desc": "显示 CPU、内存和 GPU 信息",
+        "msg.info_disk": "磁盘使用",
+        "msg.info_disk_desc": "显示磁盘使用情况和最大目录",
+        "msg.info_network": "网络状态",
+        "msg.info_network_desc": "显示 IP 地址、DNS 和连接",
+        "msg.info_services": "服务状态",
+        "msg.info_services_desc": "显示运行中的服务和最近错误",
+        "msg.info_all": "全部信息",
+        "msg.info_all_desc": "显示所有系统信息",
+        "msg.info_hardware_running": "硬件信息：",
+        "msg.info_disk_running": "磁盘使用：",
+        "msg.info_disk_home": "主目录中最大的目录：",
+        "msg.info_network_running": "网络状态：",
+        "msg.info_network_connections": "活动连接：",
+        "msg.info_services_running": "服务状态：",
+        "msg.info_services_failed": "失败的服务：",
+        "msg.info_services_count": "运行中的服务：{count}",
+        "msg.info_services_recent_errors": "最近错误：",
+
+        # ============================================================
+        # Messages — 备份/恢复
+        # ============================================================
+        "msg.backup_select": "选择操作：",
+        "msg.backup_create": "创建备份",
+        "msg.backup_create_desc": "备份关键系统配置文件",
+        "msg.backup_restore": "恢复备份",
+        "msg.backup_restore_desc": "从备份恢复配置文件",
+        "msg.backup_list": "列出备份",
+        "msg.backup_list_desc": "列出所有可用备份",
+        "msg.backup_creating": "正在创建备份...",
+        "msg.backup_file_backed": "已备份：{file}",
+        "msg.backup_file_failed": "备份 {file} 失败：{error}",
+        "msg.backup_file_not_found": "未找到：{file}",
+        "msg.backup_no_files": "没有文件可备份。",
+        "msg.backup_created": "备份已创建：{path}（{count} 个文件）",
+        "msg.backup_no_backups": "没有可用备份。",
+        "msg.backup_select_restore": "选择要恢复的备份：",
+        "msg.backup_not_found": "备份未找到：{path}",
+        "msg.backup_files_in_backup": "备份中的文件：{count}",
+        "msg.backup_confirm_restore": "是否恢复所选备份？",
+        "msg.backup_file_restored": "已恢复：{file}",
+        "msg.backup_restore_failed": "恢复 {file} 失败：{error}",
+        "msg.backup_restored": "已成功恢复 {count} 个文件。",
+        "msg.backup_available": "可用备份：",
     },
 }
 

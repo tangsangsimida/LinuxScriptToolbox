@@ -47,7 +47,8 @@ test_ssh_init() {
     echo "==> SSH status BEFORE:"
     run_remote "$host" "systemctl is-active $svc || true; systemctl is-enabled $svc || true"
     echo ""
-    run_remote "$host" "cd ~/LinuxScriptToolbox && echo '1' | python3 main.py" || true
+    # Use --tool parameter instead of menu position
+    run_remote "$host" "cd ~/LinuxScriptToolbox && python3 main.py --tool device-init" || true
     echo ""
     echo "==> SSH status AFTER:"
     run_remote "$host" "systemctl is-active $svc; systemctl is-enabled $svc"
@@ -60,15 +61,9 @@ test_dev_tools() {
     echo "  Test: Dev Tools Setup [$host]"
     echo "========================================"
 
-    # NOTE: Menu position '1' assumes dev-tools is the first tool discovered
-    # by pkgutil.walk_packages (common/ directory, alphabetical order).
-    # If tools are added/reordered, this position may need updating.
-    #
-    # First '1' = main menu tool selection, second '1'/'2' = dev-tools sub-menu.
-
     # Test ARM GCC installation (sub-menu option 1)
     echo "==> Installing ARM GCC toolchain..."
-    run_remote "$host" "cd ~/LinuxScriptToolbox && printf '1\n1\n' | python3 main.py" || true
+    run_remote "$host" "cd ~/LinuxScriptToolbox && printf '1\n' | python3 main.py --tool dev-tools" || true
     echo ""
     echo "==> Verifying ARM GCC:"
     run_remote "$host" "arm-none-eabi-gcc --version | head -1" || echo "arm-none-eabi-gcc not found"
@@ -76,7 +71,7 @@ test_dev_tools() {
 
     # Test RISC-V GCC installation (sub-menu option 2)
     echo "==> Installing RISC-V GCC toolchain..."
-    run_remote "$host" "cd ~/LinuxScriptToolbox && printf '1\n2\n' | python3 main.py" || true
+    run_remote "$host" "cd ~/LinuxScriptToolbox && printf '2\n' | python3 main.py --tool dev-tools" || true
     echo ""
     echo "==> Verifying RISC-V GCC:"
     run_remote "$host" "riscv64-elf-gcc --version 2>/dev/null | head -1 || riscv64-linux-gnu-gcc --version 2>/dev/null | head -1 || echo 'RISC-V GCC not found'"
@@ -92,14 +87,9 @@ test_quick_fixes() {
     # Clean up any previous wrappers
     run_remote "$host" "rm -f ~/.local/bin/STM32CubeMX* ~/.local/bin/stm32cubemx ~/.local/share/applications/stm32cubemx.desktop" || true
 
-    # NOTE: Menu position '4' assumes quick-fixes is the 4th tool discovered
-    # by pkgutil.walk_packages (common/ directory, alphabetical order).
-    # If tools are added/reordered, this position may need updating.
-    #
-    # First '4' = main menu quick-fixes, second '1' = STM32CubeMX Wayland Fix.
-
+    # Use --tool parameter and select STM32CubeMX Wayland Fix (option 1)
     echo "==> Running STM32CubeMX Wayland Fix..."
-    run_remote "$host" "cd ~/LinuxScriptToolbox && printf '4\n1\n\n' | python3 main.py" || true
+    run_remote "$host" "cd ~/LinuxScriptToolbox && printf '1\n\n' | python3 main.py --tool quick-fixes" || true
 
     echo ""
     echo "==> Verifying wrapper script:"
@@ -133,7 +123,8 @@ test_mirror_opt() {
     echo "==> BEFORE:"
     run_remote "$host" "cat $sources_path"
     echo ""
-    run_remote "$host" "cd ~/LinuxScriptToolbox && echo '2' | python3 main.py" || true
+    # Use --tool parameter instead of menu position
+    run_remote "$host" "cd ~/LinuxScriptToolbox && python3 main.py --tool mirror-optimizer" || true
     echo ""
     echo "==> AFTER:"
     run_remote "$host" "cat $sources_path"

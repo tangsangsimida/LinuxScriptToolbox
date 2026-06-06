@@ -4,15 +4,31 @@ import subprocess
 from pathlib import Path
 
 from tools.base import Tool
+from utils.cmd_utils import run_cmd, run_verbose
 from utils.distro import detect_distro
 from utils.i18n import t
-from utils.ui import print_success, print_error, print_info, ask, console, prompt_selection, BACK_ACTION
+from utils.ui import print_success, print_error, print_info, print_warning, ask, confirm, console, prompt_selection, BACK_ACTION
 
 FIX_OPTIONS = [
     {
         "id": "stm32cubemx-wayland",
         "name_key": "msg.qfix_stm32cubemx",
         "desc_key": "msg.qfix_stm32cubemx_desc",
+    },
+    {
+        "id": "git-proxy",
+        "name_key": "msg.qfix_git_proxy",
+        "desc_key": "msg.qfix_git_proxy_desc",
+    },
+    {
+        "id": "npm-permissions",
+        "name_key": "msg.qfix_npm_permissions",
+        "desc_key": "msg.qfix_npm_permissions_desc",
+    },
+    {
+        "id": "docker-group",
+        "name_key": "msg.qfix_docker_group",
+        "desc_key": "msg.qfix_docker_group_desc",
     },
 ]
 
@@ -128,7 +144,7 @@ class QuickFixes(Tool):
     name = "quick-fixes"
     display_name = "Quick Fixes"
     description = "One-click fixes for common Linux software issues"
-    distros = ["arch", "debian"]
+    distros = ["arch", "debian", "fedora", "suse", "unknown"]
 
     def _fix_stm32cubemx_wayland(self) -> bool:
         # Step 1: Detect installation
@@ -167,6 +183,123 @@ class QuickFixes(Tool):
         print_info(t("msg.qfix_usage_hint", wrapper=str(wrapper_path)))
         return True
 
+    def _fix_git_proxy(self) -> bool:
+        """Configure Git proxy settings."""
+        print_info(t("msg.qfix_git_proxy_configuring"))
+
+        # Check current proxy settings
+        code, current_http = run_cmd(["git", "config", "--global", "http.proxy"])
+        code2, current_https = run_cmd(["git", "config", "--global", "https.proxy"])
+
+        if current_http or current_https:
+            print_info(t("msg.qfix_git_proxy_current", http=current_http or "none", https=current_https or "none"))
+            if not confirm(t("msg.qfix_git_proxy_overwrite")):
+                return False
+
+        # Ask for proxy URL
+        proxy_url = ask(t("msg.qfix_git_proxy_enter")).strip()
+        if not proxy_url:
+            print_warning(t("msg.qfix_git_proxy_empty"))
+            return False
+
+        # Validate proxy URL format
+        if not proxy_url.startswith(("http://", "https://", "socks5://")):
+            proxy_url = "http://" + proxy_url
+
+        # Set proxy
+        run_cmd(["git", "config", "--global", "http.proxy", proxy_url])
+        run_cmd(["git", "config", "--global", "https.proxy", proxy_url])
+
+        print_success(t("msg.qfix_git_proxy_set", proxy=proxy_url))
+        return True
+
+    def _fix_npm_permissions(self) -> bool:
+        """Fix npm global directory permissions."""
+        print_info(t("msg.qfix_npm_configuring"))
+
+        # Check if npm is installed
+        if run_cmd(["which", "npm"])[0] != 0:
+            print_error(t("msg.qfix_npm_not_found"))
+            return False
+
+        # Get npm global prefix
+        code, npm_prefix = run_cmd(["npm", "config", "get", "prefix"])
+        if code != 0:
+            print_error(t("msg.qfix_npm_prefix_failed"))
+            return False
+
+        # Check if it's already user-owned
+        npm_dir = Path(npm_prefix)
+        if npm_dir.exists() and os.access(npm_dir, os.W_OK):
+            print_info(t("msg.qfix_npm_already_ok"))
+            return True
+
+        # Create user-owned npm directory
+        user_npm_dir = Path.home() / ".npm-global"
+        print_info(t("msg.qfix_npm_creating", dir=str(user_npm_dir)))
+
+        try:
+            user_npm_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            print_error(t("msg.qfix_npm_create_failed", error=str(e)))
+            return False
+
+        # Set npm prefix
+        run_cmd(["npm", "config", "set", "prefix", str(user_npm_dir)])
+
+        # Update PATH in shell profile
+        shell_profile = Path.home() / ".bashrc"
+        if not shell_profile.exists():
+            shell_profile = Path.home() / ".profile"
+
+        path_export = f'export PATH="{user_npm_dir}/bin:$PATH"'
+        if shell_profile.exists():
+            content = shell_profile.read_text()
+            if path_export not in content:
+                print_info(t("msg.qfix_npm_updating_profile", profile=str(shell_profile)))
+                with open(shell_profile, "a") as f:
+                    f.write(f"\n# npm global directory\n{path_export}\n")
+
+        print_success(t("msg.qfix_npm_success", dir=str(user_npm_dir)))
+        print_info(t("msg.qfix_npm_reload_hint"))
+        return True
+
+    def _fix_docker_group(self) -> bool:
+        """Add current user to docker group."""
+        print_info(t("msg.qfix_docker_configuring"))
+
+        # Check if docker is installed
+        if run_cmd(["which", "docker"])[0] != 0:
+            print_error(t("msg.qfix_docker_not_found"))
+            return False
+
+        # Get current user
+        import getpass
+        user = getpass.getuser()
+
+        # Check if user is already in docker group
+        code, groups = run_cmd(["groups", user])
+        if "docker" in groups:
+            print_info(t("msg.qfix_docker_already_in_group", user=user))
+            return True
+
+        # Check if docker group exists
+        code, _ = run_cmd(["getent", "group", "docker"])
+        if code != 0:
+            print_info(t("msg.qfix_docker_creating_group"))
+            run_cmd(["sudo", "groupadd", "docker"])
+
+        # Add user to docker group
+        print_info(t("msg.qfix_docker_adding_user", user=user))
+        code = run_verbose(["sudo", "usermod", "-aG", "docker", user])
+        if code != 0:
+            print_error(t("msg.qfix_docker_add_failed"))
+            return False
+
+        print_success(t("msg.qfix_docker_success", user=user))
+        print_warning(t("msg.qfix_docker_logout_hint"))
+        return True
+
     def run(self) -> bool | None:
         choice = prompt_selection(t("msg.qfix_select"), FIX_OPTIONS)
 
@@ -182,6 +315,12 @@ class QuickFixes(Tool):
 
         if selected["id"] == "stm32cubemx-wayland":
             return self._fix_stm32cubemx_wayland()
+        elif selected["id"] == "git-proxy":
+            return self._fix_git_proxy()
+        elif selected["id"] == "npm-permissions":
+            return self._fix_npm_permissions()
+        elif selected["id"] == "docker-group":
+            return self._fix_docker_group()
 
         print_error(t("msg.qfix_not_implemented"))
         return False
