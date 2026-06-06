@@ -1,3 +1,4 @@
+import getpass
 import os
 import stat
 import subprocess
@@ -274,7 +275,6 @@ class QuickFixes(Tool):
             return False
 
         # Get current user
-        import getpass
         user = getpass.getuser()
 
         # Check if user is already in docker group

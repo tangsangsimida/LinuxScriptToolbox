@@ -1,9 +1,8 @@
 import getpass
-import subprocess
 from pathlib import Path
 
 from tools.base import Tool
-from utils.cmd_utils import run_cmd, run_verbose
+from utils.cmd_utils import run_cmd, run_cmd_with_stdin, run_verbose
 from utils.distro import detect_distro
 from utils.i18n import t
 from utils.sudo_utils import write_file, copy_file
@@ -43,13 +42,8 @@ def _set_password(user: str) -> None:
     if pw1 != pw2:
         print_warning(t("msg.password_mismatch"))
         return
-    proc = subprocess.run(
-        ["sudo", "chpasswd"],
-        input=f"{user}:{pw1}",
-        text=True,
-        capture_output=True,
-    )
-    if proc.returncode != 0:
+    code, _ = run_cmd_with_stdin(["sudo", "chpasswd"], f"{user}:{pw1}")
+    if code != 0:
         print_error(t("msg.password_set_failed"))
         return
     print_success(t("msg.password_set_success", user=user))

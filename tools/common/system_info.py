@@ -1,5 +1,7 @@
 """System Info — display hardware overview, disk usage, network status, and services."""
 
+from pathlib import Path
+
 from tools.base import Tool
 from utils.cmd_utils import run_cmd
 from utils.distro import detect_distro
@@ -81,7 +83,7 @@ def _show_disk() -> bool:
 
     # Largest directories in home
     print_info(t("msg.info_disk_home"))
-    code, home_usage = run_cmd(["du", "-sh", str(__import__('pathlib').Path.home() / "*")])
+    code, home_usage = run_cmd(["du", "-sh", str(Path.home() / "*")])
     if code == 0:
         # Sort by size and show top 5
         lines = home_usage.strip().split("\n")

@@ -1,5 +1,8 @@
 """System Cleanup — clean package caches, journal logs, and temporary files."""
 
+import shutil
+from pathlib import Path
+
 from tools.base import Tool
 from utils.cmd_utils import run_cmd, run_verbose
 from utils.distro import detect_distro
@@ -89,9 +92,6 @@ def _clean_temp_files() -> bool:
         print_warning(t("msg.cleanup_temp_partial"))
 
     # Clean user cache
-    import shutil
-    from pathlib import Path
-
     cache_dir = Path.home() / ".cache"
     if cache_dir.exists():
         try:
