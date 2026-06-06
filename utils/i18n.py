@@ -60,6 +60,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tool.shorin-setup.description": "Clone and run shorin-arch-setup for desktop environment configuration",
         "tool.ai-cli-setup.display_name": "AI CLI Setup",
         "tool.ai-cli-setup.description": "One-click install AI coding assistant CLIs (Claude Code, Codex, Gemini, OpenCode)",
+        "tool.system-cleanup.display_name": "System Cleanup",
+        "tool.system-cleanup.description": "Clean package caches, journal logs, and temporary files",
+        "tool.system-info.display_name": "System Info",
+        "tool.system-info.description": "Display hardware overview, disk usage, network status, and services",
+        "tool.backup-restore.display_name": "Backup/Restore",
+        "tool.backup-restore.description": "Backup and restore critical system configuration files",
 
         # ============================================================
         # Messages — Common (shared across tools)
@@ -359,6 +365,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tool.shorin-setup.description": "克隆并运行 shorin-arch-setup 进行桌面环境配置",
         "tool.ai-cli-setup.display_name": "AI CLI 安装",
         "tool.ai-cli-setup.description": "一键安装 AI 编程助手 CLI（Claude Code、Codex、Gemini、OpenCode）",
+        "tool.system-cleanup.display_name": "系统清理",
+        "tool.system-cleanup.description": "清理包缓存、日志和临时文件",
+        "tool.system-info.display_name": "系统信息",
+        "tool.system-info.description": "显示硬件概览、磁盘使用、网络状态和服务状态",
+        "tool.backup-restore.display_name": "备份/恢复",
+        "tool.backup-restore.description": "备份和恢复关键系统配置文件",
 
         # ============================================================
         # Messages — 通用（跨工具共享）
