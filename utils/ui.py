@@ -3,7 +3,6 @@ import sys
 from typing import Optional
 
 import questionary
-from prompt_toolkit.keys import Keys
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text

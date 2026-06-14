@@ -6,6 +6,8 @@ from utils.distro import detect_distro
 from utils.i18n import t
 from utils.ui import print_success, print_error, print_info, console, prompt_selection, BACK_ACTION
 
+MIN_NODE_MAJOR = 18
+
 AI_CLI_OPTIONS = [
     {
         "id": "claude-code",
@@ -68,6 +70,23 @@ def _get_node_version() -> str | None:
     if code == 0:
         return out
     return None
+
+
+def _parse_node_major(version: str | None) -> int | None:
+    """Parse a Node.js major version from strings like 'v20.11.1'."""
+    if not version:
+        return None
+
+    major = version.strip().lstrip("v").split(".", 1)[0]
+    if not major.isdigit():
+        return None
+    return int(major)
+
+
+def _is_node_version_supported(version: str | None) -> bool:
+    """Return True when Node.js satisfies the minimum supported version."""
+    major = _parse_node_major(version)
+    return major is not None and major >= MIN_NODE_MAJOR
 
 
 def _install_nodejs(distro: str) -> bool:
@@ -195,9 +214,19 @@ class AiCliSetup(Tool):
             print_info(t("msg.ai_cli_nodejs_not_found"))
             if not _install_nodejs(distro):
                 return False
-        else:
-            version = _get_node_version()
-            print_info(t("msg.ai_cli_nodejs_detected", version=version or "unknown"))
+
+        version = _get_node_version()
+        if not _is_node_version_supported(version):
+            print_error(
+                t(
+                    "msg.ai_cli_nodejs_version_too_old",
+                    version=version or "unknown",
+                    required=MIN_NODE_MAJOR,
+                )
+            )
+            return False
+
+        print_info(t("msg.ai_cli_nodejs_detected", version=version or "unknown"))
 
         if not _has_npm():
             print_error(t("msg.ai_cli_npm_not_found"))

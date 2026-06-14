@@ -5,7 +5,7 @@ from tools.base import Tool
 from utils.cmd_utils import run_verbose
 from utils.distro import detect_distro
 from utils.i18n import t
-from utils.ui import print_success, print_error, print_info, print_warning, console, prompt_selection, BACK_ACTION
+from utils.ui import print_success, print_error, print_info, print_warning, prompt_selection, BACK_ACTION
 
 SHORIN_REPO = "https://github.com/SHORiN-KiWATA/shorin-arch-setup.git"
 SHORIN_DIR = Path("/tmp/shorin-arch-setup")

@@ -10,7 +10,6 @@ Usage:
 import sys
 from pathlib import Path
 from unittest import TestCase, main as unittest_main
-from unittest.mock import patch, MagicMock
 
 # Add project root to path
 PROJECT_DIR = Path(__file__).parent.parent

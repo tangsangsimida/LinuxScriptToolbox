@@ -5,6 +5,7 @@ __pycache__/
 *.bak
 config.json
 .venv/
+.pytest_cache/
+.ruff_cache/
 tests/test_config.py
 tests/test_config.sh
-AGENTS.md

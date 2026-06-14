@@ -11,17 +11,58 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 source "$SCRIPT_DIR/test_config.sh"
 
 run_remote() {
-    sshpass -p "$TEST_PASS" ssh -o StrictHostKeyChecking=no "$TEST_USER@$1" "${@:2}"
+    local host="$1"
+    shift
+    local cmd="$*"
+    local sudo_pass="${TEST_SUDO_PASS:-$TEST_PASS}"
+
+    if [[ -n "$sudo_pass" ]]; then
+        local quoted_pass
+        quoted_pass="$(printf '%q' "$sudo_pass")"
+        cmd="export LST_SUDO_PASSWORD=$quoted_pass; printf '%s\n' $quoted_pass | sudo -S -v >/dev/null 2>&1; $cmd"
+    fi
+
+    sshpass -p "$TEST_PASS" ssh -o StrictHostKeyChecking=no "$TEST_USER@$host" \
+        "bash -lc $(printf '%q' "$cmd")"
+}
+
+run_remote_sudo() {
+    local host="$1"
+    shift
+    local sudo_pass="${TEST_SUDO_PASS:-$TEST_PASS}"
+    local quoted_pass
+    quoted_pass="$(printf '%q' "$sudo_pass")"
+    run_remote "$host" "printf '%s\n' $quoted_pass | sudo -S -p '' $*"
 }
 
 sync_project() {
     local host="$1"
     echo "==> Syncing project to $host..."
-    sshpass -p "$TEST_PASS" rsync -az --delete \
-        --exclude '__pycache__' \
-        --exclude 'config.json' \
-        --exclude '.git' \
-        "$PROJECT_DIR/" "$TEST_USER@$host:~/LinuxScriptToolbox/"
+    if run_remote "$host" "command -v rsync >/dev/null"; then
+        sshpass -p "$TEST_PASS" rsync -az --delete \
+            --exclude '__pycache__' \
+            --exclude '.pytest_cache' \
+            --exclude '.ruff_cache' \
+            --exclude '.venv' \
+            --exclude 'config.json' \
+            --exclude 'tests/test_config.py' \
+            --exclude 'tests/test_config.sh' \
+            --exclude '.git' \
+            "$PROJECT_DIR/" "$TEST_USER@$host:~/LinuxScriptToolbox/"
+    else
+        echo "==> rsync not found on $host; using tar fallback..."
+        tar -C "$PROJECT_DIR" \
+            --exclude='.git' \
+            --exclude='.pytest_cache' \
+            --exclude='.ruff_cache' \
+            --exclude='.venv' \
+            --exclude='config.json' \
+            --exclude='tests/test_config.py' \
+            --exclude='tests/test_config.sh' \
+            --exclude='*/__pycache__' \
+            -czf - . | sshpass -p "$TEST_PASS" ssh -o StrictHostKeyChecking=no "$TEST_USER@$host" \
+                "bash -lc 'mkdir -p ~/LinuxScriptToolbox && find ~/LinuxScriptToolbox -mindepth 1 -maxdepth 1 ! -name .venv -exec rm -rf {} + && tar -C ~/LinuxScriptToolbox -xzf -'"
+    fi
     echo "==> Sync complete."
 }
 
@@ -112,28 +153,54 @@ test_mirror_opt() {
     echo "  Test: Mirror Optimizer [$host]"
     echo "========================================"
 
-    # Detect format
+    local pm
     local sources_path
-    if run_remote "$host" "test -f /etc/apt/sources.list.d/ubuntu.sources" 2>/dev/null; then
+    local refresh_cmd
+
+    if run_remote "$host" "test -f /etc/pacman.d/mirrorlist" 2>/dev/null; then
+        pm="pacman"
+        sources_path="/etc/pacman.d/mirrorlist"
+        refresh_cmd="sudo pacman -Sy --noconfirm"
+    elif run_remote "$host" "test -f /etc/apt/sources.list.d/ubuntu.sources" 2>/dev/null; then
+        pm="apt"
         sources_path="/etc/apt/sources.list.d/ubuntu.sources"
-    else
+        refresh_cmd="sudo apt update"
+    elif run_remote "$host" "test -f /etc/apt/sources.list" 2>/dev/null; then
+        pm="apt"
         sources_path="/etc/apt/sources.list"
+        refresh_cmd="sudo apt update"
+    elif run_remote "$host" "test -d /etc/yum.repos.d" 2>/dev/null; then
+        pm="dnf"
+        sources_path="/etc/yum.repos.d"
+        refresh_cmd="sudo dnf makecache"
+    elif run_remote "$host" "test -d /etc/zypp/repos.d" 2>/dev/null; then
+        pm="zypper"
+        sources_path="/etc/zypp/repos.d"
+        refresh_cmd="sudo zypper refresh"
+    else
+        echo "No supported package manager config found."
+        return 1
     fi
+    echo "==> Package manager: $pm"
     echo "==> Sources file: $sources_path"
     echo "==> BEFORE:"
-    run_remote "$host" "cat $sources_path"
+    run_remote "$host" "if test -d $sources_path; then ls -1 $sources_path; else head -40 $sources_path; fi"
     echo ""
     # Use --tool parameter instead of menu position
     run_remote "$host" "cd ~/LinuxScriptToolbox && python3 main.py --tool mirror-optimizer" || true
     echo ""
     echo "==> AFTER:"
-    run_remote "$host" "cat $sources_path"
+    run_remote "$host" "if test -d $sources_path; then ls -1 $sources_path; else head -40 $sources_path; fi"
     echo ""
-    echo "==> apt update test:"
-    run_remote "$host" "sudo apt update 2>&1 | tail -5"
+    echo "==> Package metadata refresh test:"
+    run_remote "$host" "$refresh_cmd 2>&1 | tail -20"
     echo ""
     echo "==> Restoring backup..."
-    run_remote "$host" "sudo cp ${sources_path}.bak $sources_path"
+    if [[ "$pm" == "dnf" || "$pm" == "zypper" ]]; then
+        run_remote "$host" "for backup in $sources_path/*.repo.bak; do test -e \"\$backup\" || continue; printf '%s\n' \"\$LST_SUDO_PASSWORD\" | sudo -S -p '' cp \"\$backup\" \"\${backup%.bak}\"; done"
+    else
+        run_remote_sudo "$host" "cp ${sources_path}.bak $sources_path"
+    fi
     echo "==> Restored."
 }
 

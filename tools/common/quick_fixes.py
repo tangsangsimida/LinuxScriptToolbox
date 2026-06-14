@@ -1,12 +1,10 @@
 import getpass
 import os
 import stat
-import subprocess
 from pathlib import Path
 
 from tools.base import Tool
 from utils.cmd_utils import run_cmd, run_verbose
-from utils.distro import detect_distro
 from utils.i18n import t
 from utils.ui import print_success, print_error, print_info, print_warning, ask, confirm, console, prompt_selection, BACK_ACTION
 

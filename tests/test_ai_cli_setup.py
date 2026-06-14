@@ -25,6 +25,28 @@ class TestAiCliSetup(TestCase):
         self.assertEqual(mimo["name_key"], "msg.ai_cli_mimo")
         self.assertEqual(mimo["desc_key"], "msg.ai_cli_mimo_desc")
 
+    def test_node_major_version_parsing(self):
+        """Node version parsing should accept normal Node.js version strings."""
+        self.assertEqual(ai_cli_setup._parse_node_major("v20.11.1"), 20)
+        self.assertEqual(ai_cli_setup._parse_node_major("18.19.0"), 18)
+        self.assertIsNone(ai_cli_setup._parse_node_major("not-a-version"))
+        self.assertIsNone(ai_cli_setup._parse_node_major(None))
+
+    def test_node_version_support_threshold(self):
+        """AI CLI npm installs require Node.js 18 or newer."""
+        self.assertTrue(ai_cli_setup._is_node_version_supported("v18.0.0"))
+        self.assertTrue(ai_cli_setup._is_node_version_supported("v20.11.1"))
+        self.assertFalse(ai_cli_setup._is_node_version_supported("v16.20.2"))
+        self.assertFalse(ai_cli_setup._is_node_version_supported(None))
+
+    @patch("tools.common.ai_cli_setup._get_node_version", return_value="v16.20.2")
+    @patch("tools.common.ai_cli_setup._has_nodejs", return_value=True)
+    def test_ensure_nodejs_rejects_old_node(self, _mock_has_nodejs, _mock_version):
+        """Install flow should stop before npm install when Node.js is too old."""
+        tool = ai_cli_setup.AiCliSetup()
+
+        self.assertFalse(tool._ensure_nodejs("debian"))
+
     @patch("tools.common.ai_cli_setup._has_npm", return_value=True)
     @patch("tools.common.ai_cli_setup._update_npm_package", return_value=True)
     @patch("tools.common.ai_cli_setup._get_installed_clis")

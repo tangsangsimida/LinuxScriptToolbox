@@ -2,65 +2,26 @@
 """LinuxScriptToolbox - Quick tools for various Linux distributions."""
 
 import argparse
-import os
-import subprocess
 import sys
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent
-VENV_DIR = PROJECT_DIR / ".venv"
-REQUIREMENTS = PROJECT_DIR / "requirements.txt"
 
 sys.path.insert(0, str(PROJECT_DIR))
 
 
 # ── Virtual environment bootstrap ───────────────────────────────
 
-def _setup_venv():
-    """Create .venv and install dependencies, then re-exec under venv Python."""
-    print("Creating virtual environment...")
-    if subprocess.run([sys.executable, "-m", "venv", str(VENV_DIR)]).returncode != 0:
-        print("Error: Failed to create virtual environment.")
-        sys.exit(1)
+from utils.bootstrap import ensure_venv
 
-    venv_pip = VENV_DIR / "bin" / "pip"
-    if REQUIREMENTS.exists():
-        print("Installing dependencies...")
-        if subprocess.run([str(venv_pip), "install", "-r", str(REQUIREMENTS)]).returncode != 0:
-            print("Error: Failed to install dependencies.")
-            sys.exit(1)
-
-    venv_python = VENV_DIR / "bin" / "python"
-    os.execvp(str(venv_python), [str(venv_python)] + sys.argv)
-
-
-def ensure_venv():
-    """Ensure we are running inside the project virtual environment.
-
-    If not, create it and re-launch this script under .venv/bin/python.
-    """
-    if sys.prefix != sys.base_prefix:
-        return  # already inside a venv
-
-    if not VENV_DIR.exists():
-        _setup_venv()
-
-    # venv exists but we are not in it — re-exec
-    venv_python = VENV_DIR / "bin" / "python"
-    if venv_python.exists():
-        os.execvp(str(venv_python), [str(venv_python)] + sys.argv)
-    else:
-        _setup_venv()
-
-
-ensure_venv()
+ensure_venv(PROJECT_DIR)
 
 
 # ── Normal imports (after deps are ensured) ─────────────────────
 
 from utils.distro import detect_distro
 from utils.ui import (
-    show_header, show_tool_header, print_success, print_error,
+    show_header, show_tool_header, print_error,
     print_info, console, select_tool, select_option,
     press_any_key,
 )

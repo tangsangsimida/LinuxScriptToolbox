@@ -8,8 +8,9 @@ Usage:
 """
 
 import sys
-import json
+import ast
 from pathlib import Path
+from collections import Counter
 from unittest import TestCase, main as unittest_main
 from unittest.mock import patch, MagicMock
 
@@ -70,6 +71,56 @@ class TestTranslationLookup(TestCase):
         from utils.i18n import t
         result = t("ui.available_tools")
         self.assertEqual(result, "Available tools:")
+
+
+class TestTranslationCatalog(TestCase):
+    """Test translation catalog consistency."""
+
+    def test_supported_languages_have_same_keys(self):
+        """Every supported language should define the same translation keys."""
+        from utils.i18n import TRANSLATIONS
+
+        baseline = set(TRANSLATIONS["en"])
+        for lang, translations in TRANSLATIONS.items():
+            with self.subTest(lang=lang):
+                keys = set(translations)
+                self.assertEqual(keys, baseline)
+
+    def test_translation_source_has_no_duplicate_keys(self):
+        """Literal translation dictionaries should not define duplicate keys."""
+        source = (PROJECT_DIR / "utils" / "i18n.py").read_text()
+        tree = ast.parse(source)
+        duplicates = {}
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign):
+                is_translations = any(
+                    isinstance(target, ast.Name) and target.id == "TRANSLATIONS"
+                    for target in node.targets
+                )
+            elif isinstance(node, ast.AnnAssign):
+                is_translations = (
+                    isinstance(node.target, ast.Name) and node.target.id == "TRANSLATIONS"
+                )
+            else:
+                is_translations = False
+
+            if not is_translations or not isinstance(node.value, ast.Dict):
+                continue
+
+            for lang_node, catalog_node in zip(node.value.keys, node.value.values):
+                if not isinstance(lang_node, ast.Constant) or not isinstance(catalog_node, ast.Dict):
+                    continue
+                keys = [
+                    key.value
+                    for key in catalog_node.keys
+                    if isinstance(key, ast.Constant) and isinstance(key.value, str)
+                ]
+                duplicates[lang_node.value] = [
+                    key for key, count in Counter(keys).items() if count > 1
+                ]
+
+        self.assertEqual(duplicates, {"en": [], "zh": []})
 
 
 class TestLanguagePersistence(TestCase):

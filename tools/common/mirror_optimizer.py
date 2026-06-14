@@ -7,7 +7,7 @@ from tools.base import Tool
 from utils.cmd_utils import run_cmd
 from utils.sudo_utils import write_file, copy_file, need_sudo
 from utils.i18n import t
-from utils.ui import print_success, print_error, print_info, prompt_selection, BACK_ACTION
+from utils.ui import print_success, print_error, print_info
 
 BACKUP_SUFFIX = ".bak"
 

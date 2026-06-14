@@ -153,6 +153,10 @@ python -m pytest tests/ -v
 
 # Run UI tests only
 python -m pytest tests/test_ui.py -v
+
+# Run lint checks
+python -m ruff check .
+python tests/check_ui_patterns.py
 ```
 
 ### Integration Tests

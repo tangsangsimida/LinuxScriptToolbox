@@ -97,6 +97,28 @@ class TestRunCmd(TestCase):
 
         self.assertEqual(output, "hello")
 
+    @patch.dict("os.environ", {"LST_SUDO_PASSWORD": "secret"})
+    @patch("utils.cmd_utils.subprocess.run")
+    def test_sudo_command_uses_password_from_env(self, mock_run):
+        """Test non-interactive sudo password injection for captured commands."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = "ok"
+        mock_run.return_value = mock_result
+
+        from utils.cmd_utils import run_cmd
+        code, output = run_cmd(["sudo", "cat", "/etc/shadow"])
+
+        self.assertEqual(code, 0)
+        self.assertEqual(output, "ok")
+        mock_run.assert_called_once_with(
+            ["sudo", "-S", "-p", "", "cat", "/etc/shadow"],
+            input="secret\n",
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+
 
 class TestRunVerbose(TestCase):
     """Test run_verbose() function."""
@@ -147,6 +169,25 @@ class TestRunVerbose(TestCase):
         run_verbose(["echo", "ok"], timeout=60)
 
         mock_run.assert_called_once_with(["echo", "ok"], timeout=60)
+
+    @patch.dict("os.environ", {"LST_SUDO_PASSWORD": "secret"})
+    @patch("utils.cmd_utils.subprocess.run")
+    def test_sudo_verbose_uses_password_from_env(self, mock_run):
+        """Test non-interactive sudo password injection for verbose commands."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_run.return_value = mock_result
+
+        from utils.cmd_utils import run_verbose
+        code = run_verbose(["sudo", "pacman", "-Sy"])
+
+        self.assertEqual(code, 0)
+        mock_run.assert_called_once_with(
+            ["sudo", "-S", "-p", "", "pacman", "-Sy"],
+            input="secret\n",
+            text=True,
+            timeout=300,
+        )
 
 
 class TestConstants(TestCase):
