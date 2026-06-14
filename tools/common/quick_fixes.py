@@ -144,6 +144,7 @@ class QuickFixes(Tool):
     display_name = "Quick Fixes"
     description = "One-click fixes for common Linux software issues"
     distros = ["arch", "debian", "fedora", "suse", "unknown"]
+    requires_sudo = True
 
     def _fix_stm32cubemx_wayland(self) -> bool:
         # Step 1: Detect installation

@@ -47,6 +47,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ui.group_debian": "Debian/Ubuntu",
         "ui.group_fedora": "Fedora",
         "ui.group_suse": "openSUSE",
+        "ui.run_all_safe_only": "Run all only runs safe read-only tools; skipped {skipped} tool(s).",
+        "ui.no_run_all_tools": "No safe tools are available for Run all.",
         # Tools
         "tool.mirror-optimizer.display_name": "Optimize Mirrors",
         "tool.mirror-optimizer.description": "Replace package manager mirrors with China mirrors (supports any distro)",
@@ -194,7 +196,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         # ============================================================
         "msg.cloning": "Cloning {repo}...",
         "msg.clone_failed": "Failed to clone {repo}.",
+        "msg.adding_ppa": "Adding PPA: {ppa}",
         "msg.shorin_select": "Select Shorin setup option:",
+        "msg.shorin_confirm_external": "Clone {repo} and run external script {script}?",
         "msg.shorin_niri": "Niri Desktop",
         "msg.shorin_niri_desc": "Install niri + DMS + quickshell via shorin-arch-setup",
         "msg.shorin_dms": "DMS (DankMaterialShell)",
@@ -282,6 +286,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.cleanup_temp_success": "Temporary files cleaned successfully.",
         "msg.cleanup_temp_error": "Error cleaning cache: {error}",
         "msg.cleanup_temp_no_cache": "No user cache directory found.",
+        "msg.cleanup_confirm": "Run cleanup: {action}?",
 
         # ============================================================
         # Messages — System Info
@@ -355,6 +360,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ui.group_debian": "Debian/Ubuntu",
         "ui.group_fedora": "Fedora",
         "ui.group_suse": "openSUSE",
+        "ui.run_all_safe_only": "运行全部只会执行安全的只读工具；已跳过 {skipped} 个工具。",
+        "ui.no_run_all_tools": "没有可用于运行全部的安全工具。",
         # Tools
         "tool.mirror-optimizer.display_name": "优化镜像源",
         "tool.mirror-optimizer.description": "将包管理器镜像源替换为中国镜像源（支持任意发行版）",
@@ -502,7 +509,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         # ============================================================
         "msg.cloning": "正在克隆 {repo}...",
         "msg.clone_failed": "克隆 {repo} 失败。",
+        "msg.adding_ppa": "正在添加 PPA：{ppa}",
         "msg.shorin_select": "选择 Shorin 配置选项：",
+        "msg.shorin_confirm_external": "是否克隆 {repo} 并运行外部脚本 {script}？",
         "msg.shorin_niri": "Niri 桌面",
         "msg.shorin_niri_desc": "通过 shorin-arch-setup 安装 niri + DMS + quickshell",
         "msg.shorin_dms": "DMS（DankMaterialShell）",
@@ -590,6 +599,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "msg.cleanup_temp_success": "临时文件清理成功。",
         "msg.cleanup_temp_error": "清理缓存时出错：{error}",
         "msg.cleanup_temp_no_cache": "未找到用户缓存目录。",
+        "msg.cleanup_confirm": "执行清理：{action}？",
 
         # ============================================================
         # Messages — 系统信息

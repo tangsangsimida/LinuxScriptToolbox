@@ -82,8 +82,12 @@ def _show_disk() -> bool:
 
     # Largest directories in home
     print_info(t("msg.info_disk_home"))
-    code, home_usage = run_cmd(["du", "-sh", str(Path.home() / "*")])
-    if code == 0:
+    home_items = [str(path) for path in Path.home().iterdir()]
+    if home_items:
+        code, home_usage = run_cmd(["du", "-sh", *home_items])
+    else:
+        code, home_usage = 0, ""
+    if code == 0 and home_usage:
         # Sort by size and show top 5
         lines = home_usage.strip().split("\n")
         lines.sort(reverse=True)
@@ -155,6 +159,18 @@ class SystemInfo(Tool):
     display_name = "System Info"
     description = "Display hardware overview, disk usage, network status, and services"
     distros = ["arch", "debian", "fedora", "suse", "unknown"]
+    mutates_system = False
+    safe_for_run_all = True
+
+    def run_all(self) -> bool | None:
+        _show_hardware()
+        console.print()
+        _show_disk()
+        console.print()
+        _show_network()
+        console.print()
+        _show_services()
+        return True
 
     def run(self) -> bool | None:
         choice = prompt_selection(t("msg.info_select"), INFO_OPTIONS)
@@ -173,14 +189,7 @@ class SystemInfo(Tool):
         elif choice == "services":
             return _show_services()
         elif choice == "all":
-            _show_hardware()
-            console.print()
-            _show_disk()
-            console.print()
-            _show_network()
-            console.print()
-            _show_services()
-            return True
+            return self.run_all()
 
         print_error(t("ui.invalid_selection"))
         return False

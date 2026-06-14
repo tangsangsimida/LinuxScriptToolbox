@@ -22,7 +22,7 @@ ensure_venv(PROJECT_DIR)
 from utils.distro import detect_distro
 from utils.ui import (
     show_header, show_tool_header, print_error,
-    print_info, console, select_tool, select_option,
+    print_info, print_warning, console, select_tool, select_option,
     press_any_key,
 )
 from tools import get_tools_for_distro, TOOLS
@@ -119,9 +119,17 @@ def main():
         elif choice == -2:  # language
             select_language()
         elif choice == -1:  # run all
-            for tool in tools_to_run:
+            safe_tools = [tool for tool in tools_to_run if tool.safe_for_run_all]
+            skipped = len(tools_to_run) - len(safe_tools)
+            if skipped:
+                print_warning(t("ui.run_all_safe_only", skipped=skipped))
+            if not safe_tools:
+                print_info(t("ui.no_run_all_tools"))
+                press_any_key()
+                continue
+            for tool in safe_tools:
                 show_tool_header(tool_display_name(tool))
-                tool.run()
+                tool.run_all()
             console.print()
             press_any_key()
         elif 0 <= choice < len(tools_to_run):

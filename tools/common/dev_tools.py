@@ -62,6 +62,8 @@ class DevToolsSetup(Tool):
     display_name = "Dev Tools Setup"
     description = "Quick install embedded toolchains (ARM GCC, RISC-V GCC)"
     distros = ["arch", "debian", "fedora", "suse"]
+    requires_network = True
+    requires_sudo = True
 
     def _install_toolchain(self, option: dict, distro: str) -> bool:
         if distro == "arch":

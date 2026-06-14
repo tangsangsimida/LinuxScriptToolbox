@@ -10,6 +10,8 @@ from utils.i18n import t
 from utils.ui import print_success, print_error, print_info
 
 BACKUP_SUFFIX = ".bak"
+MANAGED_BLOCK_START = "# BEGIN LinuxScriptToolbox China mirrors"
+MANAGED_BLOCK_END = "# END LinuxScriptToolbox China mirrors"
 
 # ── China mirror hosts ──────────────────────────────────────────
 
@@ -56,30 +58,42 @@ def _optimize_arch() -> bool:
     else:
         print_info(t("msg.backup_exists"))
 
-    # Build new mirrorlist
-    header = [
-        "#" * 80,
-        "#" + " China mirrors (fastest for mainland China) ".center(78, " ") + "#",
-        "#" * 80,
-    ]
-    mirrors = "\n".join(f"Server = {m}" for m in CHINA_ARCH_MIRRORS)
     original = PACMAN_MIRRORLIST.read_text() if PACMAN_MIRRORLIST.exists() else ""
-    content = "\n".join(header) + "\n" + mirrors + "\n\n" + original
+    content = _prepend_managed_block(original, [f"Server = {m}" for m in CHINA_ARCH_MIRRORS])
 
     write_file(PACMAN_MIRRORLIST, content)
     print_success(t("msg.mirrorlist_updated"))
     return True
 
 
+def _strip_managed_block(content: str) -> str:
+    pattern = (
+        rf"{re.escape(MANAGED_BLOCK_START)}\n"
+        rf".*?\n"
+        rf"{re.escape(MANAGED_BLOCK_END)}\n*"
+    )
+    return re.sub(pattern, "", content, flags=re.DOTALL)
+
+
+def _prepend_managed_block(content: str, lines: list[str]) -> str:
+    remaining = _strip_managed_block(content).lstrip("\n")
+    block = "\n".join([MANAGED_BLOCK_START, *lines, MANAGED_BLOCK_END])
+    if remaining:
+        return f"{block}\n\n{remaining}"
+    return f"{block}\n"
+
+
 # ── Debian/Ubuntu (apt) ─────────────────────────────────────────
 
 SOURCES_LIST = Path("/etc/apt/sources.list")
-DEB822_SOURCES = Path("/etc/apt/sources.list.d/ubuntu.sources")
+SOURCES_LIST_DIR = Path("/etc/apt/sources.list.d")
 
 
 def _get_apt_sources_path() -> Path | None:
-    if DEB822_SOURCES.exists():
-        return DEB822_SOURCES
+    if SOURCES_LIST_DIR.exists():
+        for sources in sorted(SOURCES_LIST_DIR.glob("*.sources")):
+            if sources.is_file():
+                return sources
     if SOURCES_LIST.exists():
         content = SOURCES_LIST.read_text().strip()
         if content and not content.startswith("# Ubuntu sources have moved"):
@@ -114,7 +128,8 @@ def _build_deb822(stanzas: list[dict[str, str]]) -> str:
 
 
 def _optimize_deb822(content: str) -> str:
-    mirror = f"https://{CHINA_MIRROR_HOSTS[0]}/ubuntu/"
+    family = "ubuntu" if re.search(r"URIs:\s+\S*ubuntu", content) else "debian"
+    mirror = f"https://{CHINA_MIRROR_HOSTS[0]}/{family}/"
     stanzas = _parse_deb822(content)
     for s in stanzas:
         if "URIs" in s:
@@ -178,7 +193,7 @@ def _optimize_apt() -> bool:
         print_error(t("msg.sources_list_not_found"))
         return False
 
-    is_deb822 = sources_path == DEB822_SOURCES
+    is_deb822 = sources_path.suffix == ".sources"
     fmt = "deb822" if is_deb822 else "traditional"
     print_info(t("msg.detected_format", format=fmt, path=str(sources_path)))
 
@@ -313,6 +328,7 @@ class MirrorOptimizer(Tool):
     display_name = "Optimize Mirrors"
     description = "Replace package manager mirrors with China mirrors (supports any distro)"
     distros = ["arch", "debian", "fedora", "suse", "unknown"]
+    requires_sudo = True
 
     def run(self) -> bool | None:
         pm = _detect_pkg_manager()

@@ -7,7 +7,16 @@ from tools.base import Tool
 from utils.cmd_utils import run_cmd, run_verbose
 from utils.distro import detect_distro
 from utils.i18n import t
-from utils.ui import print_success, print_error, print_info, print_warning, console, prompt_selection, BACK_ACTION
+from utils.ui import (
+    print_success,
+    print_error,
+    print_info,
+    print_warning,
+    confirm,
+    console,
+    prompt_selection,
+    BACK_ACTION,
+)
 
 CLEANUP_OPTIONS = [
     {
@@ -119,6 +128,7 @@ class SystemCleanup(Tool):
     display_name = "System Cleanup"
     description = "Clean package caches, journal logs, and temporary files"
     distros = ["arch", "debian", "fedora", "suse", "unknown"]
+    requires_sudo = True
 
     def run(self) -> bool | None:
         distro = detect_distro()
@@ -126,6 +136,14 @@ class SystemCleanup(Tool):
         choice = prompt_selection(t("msg.cleanup_select"), CLEANUP_OPTIONS)
 
         if choice is None or choice == BACK_ACTION:
+            return None
+
+        selected = next((opt for opt in CLEANUP_OPTIONS if opt["id"] == choice), None)
+        if selected is None:
+            print_error(t("ui.invalid_selection"))
+            return False
+
+        if not confirm(t("msg.cleanup_confirm", action=t(selected["name_key"]))):
             return None
 
         console.print()

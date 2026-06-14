@@ -30,6 +30,9 @@ source .venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Install development dependencies for tests/lint
+pip install -r requirements-dev.txt
 ```
 
 ## Usage
@@ -39,6 +42,10 @@ pip install -r requirements.txt
 ```bash
 python main.py
 ```
+
+`Run all tools` only runs tools marked safe and read-only. Destructive or system-mutating
+tools such as mirror changes, cleanup, package installs, SSH setup, and external scripts
+must be selected explicitly.
 
 ### List Available Tools
 
@@ -73,6 +80,9 @@ python main.py --lang zh  # 中文
 | **Quick Fixes** | One-click fixes for common Linux software issues |
 | **Shorin Setup** | Clone and run shorin-arch-setup for desktop environment configuration |
 | **AI CLI Setup** | One-click install/update AI coding assistant CLIs (Claude Code, Codex, Gemini, OpenCode, MiMo Code) |
+| **System Cleanup** | Clean package caches, journal logs, and temporary files |
+| **System Info** | Display hardware overview, disk usage, network status, and services |
+| **Backup/Restore** | Backup and restore critical system configuration files |
 
 ### Supported Distributions
 
@@ -89,19 +99,25 @@ python main.py --lang zh  # 中文
 ```
 LinuxScriptToolbox/
 ├── main.py                  # Entry point
-├── distro.py                # Distribution detection
-├── ui.py                    # Terminal UI utilities
+├── requirements.txt         # Runtime dependencies
+├── requirements-dev.txt     # Test and lint dependencies
 ├── tools/
 │   ├── base.py              # Abstract Tool class
 │   ├── __init__.py          # Tool auto-discovery
 │   └── common/              # Cross-distro tools
+│       ├── backup_restore.py
 │       ├── mirror_optimizer.py
 │       ├── device_init.py
 │       ├── dev_tools.py
 │       ├── quick_fixes.py
 │       ├── shorin_setup.py
-│       └── ai_cli_setup.py
+│       ├── ai_cli_setup.py
+│       ├── system_cleanup.py
+│       └── system_info.py
 ├── utils/
+│   ├── bootstrap.py         # Virtual environment bootstrap
+│   ├── distro.py            # Distribution detection
+│   ├── ui.py                # Terminal UI utilities
 │   ├── cmd_utils.py         # Subprocess helpers
 │   ├── sudo_utils.py        # Privileged I/O wrappers
 │   └── i18n.py              # Internationalization
@@ -149,6 +165,7 @@ Updates installed npm-based AI CLI tools from the shared package list. Missing t
 
 ```bash
 # Run all unit tests
+pip install -r requirements-dev.txt
 python -m pytest tests/ -v
 
 # Run UI tests only

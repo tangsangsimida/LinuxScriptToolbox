@@ -207,6 +207,8 @@ class AiCliSetup(Tool):
     display_name = "AI CLI Setup"
     description = "One-click install AI coding assistant CLIs (Claude Code, Codex, Gemini, OpenCode, MiMo)"
     distros = ["arch", "debian", "fedora", "suse", "unknown"]
+    requires_network = True
+    requires_sudo = True
 
     def _ensure_nodejs(self, distro: str) -> bool:
         """Ensure Node.js and npm are available. Returns False on failure."""

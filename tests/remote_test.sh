@@ -89,7 +89,7 @@ test_ssh_init() {
     run_remote "$host" "systemctl is-active $svc || true; systemctl is-enabled $svc || true"
     echo ""
     # Use --tool parameter instead of menu position
-    run_remote "$host" "cd ~/LinuxScriptToolbox && python3 main.py --tool device-init" || true
+    run_remote "$host" "cd ~/LinuxScriptToolbox && python3 main.py --tool device-init"
     echo ""
     echo "==> SSH status AFTER:"
     run_remote "$host" "systemctl is-active $svc; systemctl is-enabled $svc"
@@ -104,18 +104,18 @@ test_dev_tools() {
 
     # Test ARM GCC installation (sub-menu option 1)
     echo "==> Installing ARM GCC toolchain..."
-    run_remote "$host" "cd ~/LinuxScriptToolbox && printf '1\n' | python3 main.py --tool dev-tools" || true
+    run_remote "$host" "cd ~/LinuxScriptToolbox && printf '1\n' | python3 main.py --tool dev-tools"
     echo ""
     echo "==> Verifying ARM GCC:"
-    run_remote "$host" "arm-none-eabi-gcc --version | head -1" || echo "arm-none-eabi-gcc not found"
+    run_remote "$host" "arm-none-eabi-gcc --version | head -1"
     echo ""
 
     # Test RISC-V GCC installation (sub-menu option 2)
     echo "==> Installing RISC-V GCC toolchain..."
-    run_remote "$host" "cd ~/LinuxScriptToolbox && printf '2\n' | python3 main.py --tool dev-tools" || true
+    run_remote "$host" "cd ~/LinuxScriptToolbox && printf '2\n' | python3 main.py --tool dev-tools"
     echo ""
     echo "==> Verifying RISC-V GCC:"
-    run_remote "$host" "riscv64-elf-gcc --version 2>/dev/null | head -1 || riscv64-linux-gnu-gcc --version 2>/dev/null | head -1 || echo 'RISC-V GCC not found'"
+    run_remote "$host" "riscv64-elf-gcc --version 2>/dev/null | head -1 || riscv64-linux-gnu-gcc --version 2>/dev/null | head -1"
 }
 
 test_quick_fixes() {
@@ -127,20 +127,21 @@ test_quick_fixes() {
 
     # Clean up any previous wrappers
     run_remote "$host" "rm -f ~/.local/bin/STM32CubeMX* ~/.local/bin/stm32cubemx ~/.local/share/applications/stm32cubemx.desktop" || true
+    run_remote "$host" "mkdir -p ~/software/stm32cubemx && touch ~/software/stm32cubemx/STM32CubeMX && chmod +x ~/software/stm32cubemx/STM32CubeMX"
 
     # Use --tool parameter and select STM32CubeMX Wayland Fix (option 1)
     echo "==> Running STM32CubeMX Wayland Fix..."
-    run_remote "$host" "cd ~/LinuxScriptToolbox && printf '1\n\n' | python3 main.py --tool quick-fixes" || true
+    run_remote "$host" "cd ~/LinuxScriptToolbox && printf '1\n' | python3 main.py --tool quick-fixes"
 
     echo ""
     echo "==> Verifying wrapper script:"
-    run_remote "$host" "test -x ~/.local/bin/STM32CubeMX && echo 'wrapper OK' || echo 'wrapper NOT FOUND'"
+    run_remote "$host" "test -x ~/.local/bin/STM32CubeMX && echo 'wrapper OK'"
 
     echo "==> Verifying lowercase symlink:"
-    run_remote "$host" "test -L ~/.local/bin/stm32cubemx && echo 'symlink OK' || echo 'symlink NOT FOUND'"
+    run_remote "$host" "test -L ~/.local/bin/stm32cubemx && echo 'symlink OK'"
 
     echo "==> Verifying .desktop file:"
-    run_remote "$host" "test -f ~/.local/share/applications/stm32cubemx.desktop && echo 'desktop OK' || echo 'desktop NOT FOUND'"
+    run_remote "$host" "test -f ~/.local/share/applications/stm32cubemx.desktop && echo 'desktop OK'"
 
     echo "==> Verifying PATH resolution:"
     run_remote "$host" "which STM32CubeMX && which stm32cubemx"
@@ -187,7 +188,7 @@ test_mirror_opt() {
     run_remote "$host" "if test -d $sources_path; then ls -1 $sources_path; else head -40 $sources_path; fi"
     echo ""
     # Use --tool parameter instead of menu position
-    run_remote "$host" "cd ~/LinuxScriptToolbox && python3 main.py --tool mirror-optimizer" || true
+    run_remote "$host" "cd ~/LinuxScriptToolbox && python3 main.py --tool mirror-optimizer"
     echo ""
     echo "==> AFTER:"
     run_remote "$host" "if test -d $sources_path; then ls -1 $sources_path; else head -40 $sources_path; fi"

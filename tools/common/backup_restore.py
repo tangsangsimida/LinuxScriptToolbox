@@ -177,6 +177,7 @@ class BackupRestore(Tool):
     display_name = "Backup/Restore"
     description = "Backup and restore critical system configuration files"
     distros = ["arch", "debian", "fedora", "suse", "unknown"]
+    requires_sudo = True
 
     def run(self) -> bool | None:
         choice = prompt_selection(t("msg.backup_select"), BACKUP_OPTIONS)

@@ -108,6 +108,8 @@ class DeviceInitializer(Tool):
     display_name = "Initialize Device"
     description = "Set up SSH access (install, password, config, firewall) and python alias"
     distros = list(DISTRO_CONFIG.keys())
+    requires_network = True
+    requires_sudo = True
 
     def _get_config(self, distro: str) -> dict:
         return DISTRO_CONFIG.get(distro, DISTRO_CONFIG["debian"])

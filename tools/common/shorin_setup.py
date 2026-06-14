@@ -5,7 +5,15 @@ from tools.base import Tool
 from utils.cmd_utils import run_verbose
 from utils.distro import detect_distro
 from utils.i18n import t
-from utils.ui import print_success, print_error, print_info, print_warning, prompt_selection, BACK_ACTION
+from utils.ui import (
+    print_success,
+    print_error,
+    print_info,
+    print_warning,
+    confirm,
+    prompt_selection,
+    BACK_ACTION,
+)
 
 SHORIN_REPO = "https://github.com/SHORiN-KiWATA/shorin-arch-setup.git"
 SHORIN_DIR = Path("/tmp/shorin-arch-setup")
@@ -43,6 +51,8 @@ class ShorinSetup(Tool):
     display_name = "Shorin Arch Setup"
     description = "Clone and run shorin-arch-setup scripts for desktop environment configuration"
     distros = ["arch", "debian", "fedora", "suse"]
+    requires_network = True
+    requires_sudo = True
 
     def _clone_repo(self) -> bool:
         if SHORIN_DIR.exists():
@@ -166,6 +176,9 @@ class ShorinSetup(Tool):
         if selected is None:
             print_error(t("ui.invalid_selection"))
             return False
+
+        if not confirm(t("msg.shorin_confirm_external", repo=SHORIN_REPO, script=selected["script"])):
+            return None
 
         # Clone the repo
         if not self._clone_repo():

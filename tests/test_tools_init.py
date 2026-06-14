@@ -33,6 +33,10 @@ class TestToolDiscovery(TestCase):
             self.assertTrue(hasattr(tool, 'description'), f"Tool {tool} missing 'description'")
             self.assertTrue(hasattr(tool, 'distros'), f"Tool {tool} missing 'distros'")
             self.assertTrue(hasattr(tool, 'run'), f"Tool {tool} missing 'run'")
+            self.assertTrue(hasattr(tool, 'mutates_system'), f"Tool {tool} missing 'mutates_system'")
+            self.assertTrue(hasattr(tool, 'requires_network'), f"Tool {tool} missing 'requires_network'")
+            self.assertTrue(hasattr(tool, 'requires_sudo'), f"Tool {tool} missing 'requires_sudo'")
+            self.assertTrue(hasattr(tool, 'safe_for_run_all'), f"Tool {tool} missing 'safe_for_run_all'")
 
     def test_all_tools_have_unique_names(self):
         """Test that all tools have unique names."""
@@ -45,6 +49,15 @@ class TestToolDiscovery(TestCase):
         from tools import TOOLS
         for tool in TOOLS:
             self.assertGreater(len(tool.distros), 0, f"Tool {tool.name} has empty distros")
+
+    def test_run_all_tools_are_read_only(self):
+        """Only explicitly safe read-only tools should participate in run-all."""
+        from tools import TOOLS
+        safe_tools = [tool for tool in TOOLS if tool.safe_for_run_all]
+
+        self.assertGreater(len(safe_tools), 0)
+        for tool in safe_tools:
+            self.assertFalse(tool.mutates_system, f"{tool.name} mutates system but is run-all safe")
 
 
 class TestGetToolsForDistro(TestCase):

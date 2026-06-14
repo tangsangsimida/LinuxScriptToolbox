@@ -122,6 +122,35 @@ class TestTranslationCatalog(TestCase):
 
         self.assertEqual(duplicates, {"en": [], "zh": []})
 
+    def test_constant_translation_keys_exist(self):
+        """Every literal t('key') usage should exist in the translation catalog."""
+        from utils.i18n import TRANSLATIONS
+
+        used_keys = set()
+        source_dirs = [PROJECT_DIR / "main.py", PROJECT_DIR / "tools", PROJECT_DIR / "utils"]
+        files = []
+        for path in source_dirs:
+            if path.is_file():
+                files.append(path)
+            else:
+                files.extend(path.rglob("*.py"))
+
+        for file_path in files:
+            tree = ast.parse(file_path.read_text(), filename=str(file_path))
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                if not isinstance(node.func, ast.Name) or node.func.id != "t":
+                    continue
+                if not node.args:
+                    continue
+                key = node.args[0]
+                if isinstance(key, ast.Constant) and isinstance(key.value, str):
+                    used_keys.add(key.value)
+
+        missing = sorted(key for key in used_keys if key not in TRANSLATIONS["en"])
+        self.assertEqual(missing, [])
+
 
 class TestLanguagePersistence(TestCase):
     """Test get_lang() and set_lang() functions."""
