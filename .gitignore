@@ -7,3 +7,4 @@ config.json
 .venv/
 tests/test_config.py
 tests/test_config.sh
+AGENTS.md

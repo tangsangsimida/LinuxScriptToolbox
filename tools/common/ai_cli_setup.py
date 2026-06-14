@@ -32,6 +32,12 @@ AI_CLI_OPTIONS = [
         "package": "opencode-ai",
     },
     {
+        "id": "mimo",
+        "name_key": "msg.ai_cli_mimo",
+        "desc_key": "msg.ai_cli_mimo_desc",
+        "package": "@mimo-ai/cli",
+    },
+    {
         "id": "all",
         "name_key": "msg.ai_cli_all",
         "desc_key": "msg.ai_cli_all_desc",
@@ -144,6 +150,25 @@ def _get_installed_clis() -> list[dict]:
     return installed
 
 
+def update_installed_ai_clis() -> bool | None:
+    """Update every installed AI CLI package from the shared npm package list."""
+    if not _has_npm():
+        print_error(t("msg.ai_cli_npm_not_found"))
+        return False
+
+    installed = _get_installed_clis()
+    if not installed:
+        print_info(t("msg.ai_cli_none_installed"))
+        return None
+
+    ok = True
+    for opt in installed:
+        display_name = t(opt["name_key"])
+        if not _update_npm_package(opt["package"], display_name):
+            ok = False
+    return ok
+
+
 MAIN_MENU = [
     {
         "id": "install",
@@ -161,7 +186,7 @@ MAIN_MENU = [
 class AiCliSetup(Tool):
     name = "ai-cli-setup"
     display_name = "AI CLI Setup"
-    description = "One-click install AI coding assistant CLIs (Claude Code, Codex, Gemini, OpenCode)"
+    description = "One-click install AI coding assistant CLIs (Claude Code, Codex, Gemini, OpenCode, MiMo)"
     distros = ["arch", "debian", "fedora", "suse", "unknown"]
 
     def _ensure_nodejs(self, distro: str) -> bool:
@@ -237,12 +262,7 @@ class AiCliSetup(Tool):
         console.print()
 
         if choice == "all-installed":
-            ok = True
-            for opt in installed:
-                display_name = t(opt["name_key"])
-                if not _update_npm_package(opt["package"], display_name):
-                    ok = False
-            return ok
+            return update_installed_ai_clis()
 
         selected = next((opt for opt in installed if opt["id"] == choice), None)
         if selected is None:

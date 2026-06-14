@@ -72,7 +72,7 @@ python main.py --lang zh  # 中文
 | **Dev Tools Setup** | Quick install embedded toolchains (ARM GCC, RISC-V GCC) |
 | **Quick Fixes** | One-click fixes for common Linux software issues |
 | **Shorin Setup** | Clone and run shorin-arch-setup for desktop environment configuration |
-| **AI CLI Setup** | One-click install AI coding assistant CLIs (Claude Code, Codex, Gemini, OpenCode) |
+| **AI CLI Setup** | One-click install/update AI coding assistant CLIs (Claude Code, Codex, Gemini, OpenCode, MiMo Code) |
 
 ### Supported Distributions
 
@@ -109,9 +109,19 @@ LinuxScriptToolbox/
 │   ├── test_ui.py           # UI unit tests
 │   ├── test_config.py.example  # Test config template
 │   └── remote_test.sh       # Integration tests
+├── scripts/
+│   └── update_ai_clis.py    # Quick update for installed AI CLI tools
 └── docs/
     └── config_merged.md     # Configuration notes
 ```
+
+### Quick Update AI CLIs
+
+```bash
+python scripts/update_ai_clis.py
+```
+
+Updates installed npm-based AI CLI tools from the shared package list. Missing tools are skipped; install them from `python main.py --tool ai-cli-setup`.
 
 ## Adding a New Tool
 
