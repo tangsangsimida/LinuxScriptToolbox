@@ -5,9 +5,9 @@
 
 from tools.base import Tool
 from . import dev_tools_translations  # noqa: F401 - side-effect import for i18n registration
-from utils.cmd_utils import run_cmd, run_verbose
 from utils.distro import detect_distro
 from utils.i18n import t
+from utils.platform_services import package_is_installed, package_install
 from utils.ui import print_success, print_error, print_info, console, prompt_selection, BACK_ACTION
 
 # Available toolchain options with per-distro package mappings
@@ -39,30 +39,6 @@ TOOLCHAIN_OPTIONS = [
 ]
 
 
-# Check whether a package is already installed on the system.
-#
-# 检查系统中是否已安装指定的软件包。
-#
-# Args:
-#     pkg: Package name to check. / 要检查的软件包名称。
-#     distro: Distribution identifier (arch, fedora, suse, debian, etc.). / 发行版标识符。
-#
-# Returns:
-#     True if installed, False otherwise. / 已安装返回 True，否则返回 False。
-
-def _is_installed(pkg: str, distro: str) -> bool:
-    # Use distro-specific query commands to check package status
-    # 使用发行版特定的查询命令来检查包的状态
-    if distro == "arch":
-        cmd = ["pacman", "-Qi", pkg]
-    elif distro in ("fedora", "suse"):
-        cmd = ["rpm", "-q", pkg]
-    else:
-        cmd = ["dpkg", "-s", pkg]
-    code, _ = run_cmd(cmd)
-    return code == 0
-
-
 # Install a list of packages using the distro's native package manager.
 #
 # 使用发行版的原生包管理器安装一组软件包。
@@ -73,22 +49,13 @@ def _is_installed(pkg: str, distro: str) -> bool:
 #
 # Returns:
 #     True if all packages installed successfully, False otherwise. / 全部安装成功返回 True，否则返回 False。
-
 def _install_packages(pkgs: list[str], distro: str) -> bool:
-    if distro == "arch":
-        code = run_verbose(["sudo", "pacman", "-S", "--noconfirm"] + pkgs)
-    elif distro == "fedora":
-        code = run_verbose(["sudo", "dnf", "install", "-y"] + pkgs)
-    elif distro == "suse":
-        code = run_verbose(["sudo", "zypper", "install", "-y"] + pkgs)
-    else:
-        # Debian/Ubuntu requires updating package index before installing
-        # Debian/Ubuntu 在安装前需要先更新包索引
-        if run_verbose(["sudo", "apt-get", "update", "-qq"]) != 0:
-            print_error(t("msg.devtool_install_failed"))
+    # Install each package; update apt index on first Debian install
+    # 逐个安装软件包；Debian 首次安装时更新 apt 索引
+    for i, pkg in enumerate(pkgs):
+        if package_install(pkg, distro, update_first=(i == 0)) != 0:
             return False
-        code = run_verbose(["sudo", "apt-get", "install", "-y"] + pkgs)
-    return code == 0
+    return True
 
 
 class DevToolsSetup(Tool):
@@ -140,7 +107,7 @@ class DevToolsSetup(Tool):
             pkgs = option.get("debian_pkgs", [])
 
         # Filter out already-installed packages / 过滤掉已安装的包
-        to_install = [p for p in pkgs if not _is_installed(p, distro)]
+        to_install = [p for p in pkgs if not package_is_installed(p, distro)]
         if not to_install:
             print_info(t("msg.devtool_already_installed", toolchain=t(option["name_key"])))
             return True

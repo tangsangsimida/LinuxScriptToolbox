@@ -9,6 +9,7 @@ from utils.cmd_utils import run_cmd, run_verbose
 from utils.distro import detect_distro
 from utils.i18n import t
 from utils.platform import IS_WINDOWS, command_exists
+from utils.platform_services import package_install
 from utils.ui import print_success, print_error, print_info, console, prompt_selection, BACK_ACTION
 
 MIN_NODE_MAJOR = 18  # Minimum required Node.js major version / 最低要求的 Node.js 主版本号
@@ -117,44 +118,24 @@ def _is_node_version_supported(version: str | None) -> bool:
 def _install_nodejs(distro: str) -> bool:
     print_info(t("msg.ai_cli_nodejs_installing"))
 
-    # Windows: use winget or chocolatey / Windows：使用 winget 或 chocolatey
     if IS_WINDOWS:
-        # Try winget first / 优先尝试 winget
-        if command_exists("winget"):
-            code = run_verbose(["winget", "install", "--id", "OpenJS.NodeJS.LTS", "-e"])
-            if code == 0:
-                print_success(t("msg.ai_cli_nodejs_installed"))
-                return True
-
-        # Try chocolatey / 回退尝试 chocolatey
-        if command_exists("choco"):
-            code = run_verbose(["choco", "install", "nodejs-lts", "-y"])
-            if code == 0:
-                print_success(t("msg.ai_cli_nodejs_installed"))
-                return True
-
-        print_error(t("msg.ai_cli_nodejs_unknown"))
-        return False
-
-    # Linux: use distro package manager / Linux：使用发行版包管理器
-    pkgs = DISTRO_NODEJS_PKGS.get(distro)
-    if pkgs is None:
-        print_error(t("msg.ai_cli_nodejs_unknown"))
-        return False
-
-    if distro == "arch":  # Arch Linux: use pacman / Arch Linux：使用 pacman
-        code = run_verbose(["sudo", "pacman", "-S", "--noconfirm"] + pkgs)
-    elif distro in ("debian",):  # Debian/Ubuntu: use apt / Debian/Ubuntu：使用 apt
-        if run_verbose(["sudo", "apt-get", "update", "-qq"]) != 0:  # Refresh package index / 刷新包索引
-            print_error(t("msg.ai_cli_nodejs_install_failed"))
-            return False
-        code = run_verbose(["sudo", "apt-get", "install", "-y"] + pkgs)
-    elif distro == "fedora":  # Fedora: use dnf / Fedora：使用 dnf
-        code = run_verbose(["sudo", "dnf", "install", "-y"] + pkgs)
-    elif distro == "suse":  # openSUSE: use zypper / openSUSE：使用 zypper
-        code = run_verbose(["sudo", "zypper", "install", "-y"] + pkgs)
+        # Windows: package_install handles winget → chocolatey fallback
+        # Windows：package_install 处理 winget → chocolatey 回退
+        code = package_install("OpenJS.NodeJS.LTS", distro)
     else:
-        return False  # Unsupported distro / 不支持的发行版
+        # Linux: use distro package manager; Debian refreshes index first
+        # Linux：使用发行版包管理器；Debian 先刷新索引
+        pkgs = DISTRO_NODEJS_PKGS.get(distro)
+        if pkgs is None:
+            print_error(t("msg.ai_cli_nodejs_unknown"))
+            return False
+        # Install all required packages; first one triggers apt-get update for Debian
+        # 安装所有必需软件包；第一个包触发 Debian 的 apt-get update
+        code = 0
+        for i, pkg in enumerate(pkgs):
+            if package_install(pkg, distro, update_first=(i == 0)) != 0:
+                code = 1
+                break
 
     if code != 0:
         print_error(t("msg.ai_cli_nodejs_install_failed"))
