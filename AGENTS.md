@@ -21,7 +21,7 @@ python tests/check_ui_patterns.py
 
 ## Coding Style & Naming Conventions
 
-Follow PEP 8 with 4-space indentation, type hints for new public functions, and concise docstrings where behavior is not obvious. Use snake_case for modules, functions, variables, and tool files, for example `tools/common/backup_restore.py`. Tool `name` values use kebab-case, for example `backup-restore`. Prefer shared helpers from `utils.cmd_utils`, `utils.sudo_utils`, and `utils.ui` over local subprocess, sudo, or prompt implementations. Use `utils.platform.command_exists(name)` instead of `"where"/"which"` command patterns.
+Follow PEP 8 with 4-space indentation, type hints for new public functions, and concise docstrings where behavior is not obvious. Use snake_case for modules, functions, variables, and tool files, for example `tools/common/backup_restore.py`. Tool `name` values use kebab-case, for example `backup-restore`. Prefer shared helpers from `utils.cmd_utils`, `utils.sudo_utils`, and `utils.ui` over local subprocess, sudo, or prompt implementations.
 
 ## Testing Guidelines
 

@@ -30,8 +30,9 @@ CHINA_ARCH_MIRRORS = [
 
 # ── Package manager detection ───────────────────────────────────
 
+# Detect the active package manager.
+
 def _detect_pkg_manager() -> str | None:
-    """Detect the active package manager."""
     for pm in ["pacman", "apt", "dnf", "zypper"]:
         if command_exists(pm):
             return pm
@@ -343,8 +344,9 @@ class MirrorOptimizer(Tool):
         return optimizer()
 
 
+    # Preview package manager mirror changes without modifying files.
+
     def run_dry(self) -> str | None:
-        """Preview package manager mirror changes without modifying files."""
         pm = _detect_pkg_manager()
         if pm is None:
             return "No supported package manager detected. No changes would be made."

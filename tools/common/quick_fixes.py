@@ -88,15 +88,15 @@ Categories=Development;Electronics;
 """
 
 
+# Search for STM32CubeMX installation across common paths.
+#
+# 在常见路径中搜索 STM32CubeMX 安装目录。
+#
+# Returns:
+#     Path to the STM32CubeMX executable, or None if not found.
+#     STM32CubeMX 可执行文件路径，未找到则返回 None。
+
 def _find_stm32cubemx() -> Path | None:
-    """Search for STM32CubeMX installation across common paths.
-
-    在常见路径中搜索 STM32CubeMX 安装目录。
-
-    Returns:
-        Path to the STM32CubeMX executable, or None if not found.
-        STM32CubeMX 可执行文件路径，未找到则返回 None。
-    """
     for base in STM32_SEARCH_PATHS:
         if not base.is_dir():
             continue
@@ -119,19 +119,19 @@ def _find_stm32cubemx() -> Path | None:
     return None
 
 
+# Create a wrapper script that forces X11 backend for STM32CubeMX.
+#
+# 创建一个强制使用 X11 后端的 STM32CubeMX 包装脚本。
+#
+# Args:
+#     cubemx_path: Path to the original STM32CubeMX executable.
+#     原始 STM32CubeMX 可执行文件路径。
+#
+# Returns:
+#     Path to the created wrapper script, or None on failure.
+#     创建的包装脚本路径，失败则返回 None。
+
 def _create_wrapper(cubemx_path: Path) -> Path | None:
-    """Create a wrapper script that forces X11 backend for STM32CubeMX.
-
-    创建一个强制使用 X11 后端的 STM32CubeMX 包装脚本。
-
-    Args:
-        cubemx_path: Path to the original STM32CubeMX executable.
-                     原始 STM32CubeMX 可执行文件路径。
-
-    Returns:
-        Path to the created wrapper script, or None on failure.
-        创建的包装脚本路径，失败则返回 None。
-    """
     wrapper_dir = Path.home() / ".local" / "bin"
     wrapper_dir.mkdir(parents=True, exist_ok=True)
     content = WRAPPER_TEMPLATE.format(cubemx_path=cubemx_path)
@@ -169,19 +169,19 @@ def _create_wrapper(cubemx_path: Path) -> Path | None:
     return wrapper_path
 
 
+# Create a .desktop entry file for the Wayland-fixed STM32CubeMX.
+#
+# 为修复 Wayland 问题的 STM32CubeMX 创建 .desktop 桌面条目文件。
+#
+# Args:
+#     wrapper_path: Path to the wrapper script to use as the Exec command.
+#     用作 Exec 命令的包装脚本路径。
+#
+# Returns:
+#     True if the desktop file was created successfully, False otherwise.
+#     成功创建桌面文件返回 True，否则返回 False。
+
 def _create_desktop_file(wrapper_path: Path) -> bool:
-    """Create a .desktop entry file for the Wayland-fixed STM32CubeMX.
-
-    为修复 Wayland 问题的 STM32CubeMX 创建 .desktop 桌面条目文件。
-
-    Args:
-        wrapper_path: Path to the wrapper script to use as the Exec command.
-                      用作 Exec 命令的包装脚本路径。
-
-    Returns:
-        True if the desktop file was created successfully, False otherwise.
-        成功创建桌面文件返回 True，否则返回 False。
-    """
     desktop_dir = Path.home() / ".local" / "share" / "applications"
     desktop_dir.mkdir(parents=True, exist_ok=True)
     desktop_file = desktop_dir / "stm32cubemx.desktop"
@@ -214,15 +214,15 @@ class QuickFixes(Tool):
     distros = ["arch", "debian", "fedora", "suse", "unknown"]  # Supported distros / 支持的发行版
     requires_sudo = True  # Requires sudo for some fixes / 部分修复需要 sudo 权限
 
+    # Fix STM32CubeMX blank popup/dialog issue on Wayland by creating an X11 wrapper.
+    #
+    # 通过创建 X11 包装脚本，修复 STM32CubeMX 在 Wayland 下弹窗/对话框空白的问题。
+    #
+    # Returns:
+    #     True if the fix was applied successfully, False otherwise.
+    #     修复成功返回 True，否则返回 False。
+
     def _fix_stm32cubemx_wayland(self) -> bool:
-        """Fix STM32CubeMX blank popup/dialog issue on Wayland by creating an X11 wrapper.
-
-        通过创建 X11 包装脚本，修复 STM32CubeMX 在 Wayland 下弹窗/对话框空白的问题。
-
-        Returns:
-            True if the fix was applied successfully, False otherwise.
-            修复成功返回 True，否则返回 False。
-        """
         # Step 1: Detect installation
         # 步骤 1：检测安装路径
         print_info(t("msg.qfix_detecting_path"))
@@ -263,15 +263,15 @@ class QuickFixes(Tool):
         print_info(t("msg.qfix_usage_hint", wrapper=str(wrapper_path)))
         return True
 
+    # Configure Git global proxy settings for HTTP and HTTPS.
+    #
+    # 配置 Git 全局 HTTP 和 HTTPS 代理设置。
+    #
+    # Returns:
+    #     True if proxy was configured successfully, False otherwise.
+    #     代理配置成功返回 True，否则返回 False。
+
     def _fix_git_proxy(self) -> bool:
-        """Configure Git global proxy settings for HTTP and HTTPS.
-
-        配置 Git 全局 HTTP 和 HTTPS 代理设置。
-
-        Returns:
-            True if proxy was configured successfully, False otherwise.
-            代理配置成功返回 True，否则返回 False。
-        """
         print_info(t("msg.qfix_git_proxy_configuring"))
 
         # Check current proxy settings
@@ -304,15 +304,15 @@ class QuickFixes(Tool):
         print_success(t("msg.qfix_git_proxy_set", proxy=proxy_url))
         return True
 
+    # Fix npm global directory permission issues by creating a user-owned directory.
+    #
+    # 通过创建用户拥有的目录来修复 npm 全局目录权限问题。
+    #
+    # Returns:
+    #     True if the fix was applied successfully, False otherwise.
+    #     修复成功返回 True，否则返回 False。
+
     def _fix_npm_permissions(self) -> bool:
-        """Fix npm global directory permission issues by creating a user-owned directory.
-
-        通过创建用户拥有的目录来修复 npm 全局目录权限问题。
-
-        Returns:
-            True if the fix was applied successfully, False otherwise.
-            修复成功返回 True，否则返回 False。
-        """
         print_info(t("msg.qfix_npm_configuring"))
 
         # Check if npm is installed
@@ -369,15 +369,15 @@ class QuickFixes(Tool):
         print_info(t("msg.qfix_npm_reload_hint", hint=hint))
         return True
 
+    # Add the current user to the docker group so docker can run without sudo.
+    #
+    # 将当前用户添加到 docker 组，使 docker 可以无需 sudo 运行。
+    #
+    # Returns:
+    #     True if the user was added successfully, False otherwise.
+    #     用户添加成功返回 True，否则返回 False。
+
     def _fix_docker_group(self) -> bool:
-        """Add the current user to the docker group so docker can run without sudo.
-
-        将当前用户添加到 docker 组，使 docker 可以无需 sudo 运行。
-
-        Returns:
-            True if the user was added successfully, False otherwise.
-            用户添加成功返回 True，否则返回 False。
-        """
         print_info(t("msg.qfix_docker_configuring"))
 
         # Check if docker is installed
@@ -416,15 +416,15 @@ class QuickFixes(Tool):
         print_warning(t("msg.qfix_docker_logout_hint"))
         return True
 
+    # Run the quick fix tool by presenting a menu and executing the selected fix.
+    #
+    # 运行快速修复工具，显示菜单并执行用户选择的修复。
+    #
+    # Returns:
+    #     True if fix succeeded, False if it failed, None if user went back.
+    #     修复成功返回 True，失败返回 False，用户返回上一级返回 None。
+
     def run(self) -> bool | None:
-        """Run the quick fix tool by presenting a menu and executing the selected fix.
-
-        运行快速修复工具，显示菜单并执行用户选择的修复。
-
-        Returns:
-            True if fix succeeded, False if it failed, None if user went back.
-            修复成功返回 True，失败返回 False，用户返回上一级返回 None。
-        """
         choice = prompt_selection(t("msg.qfix_select"), FIX_OPTIONS)
 
         if choice is None or choice == BACK_ACTION:

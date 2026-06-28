@@ -15,21 +15,20 @@ import platform
 import shutil
 
 
+# Detect the current operating system.
+#
+# 检测当前操作系统。
+#
+# Uses platform.system() and caches the result since the OS never
+# changes during a single process lifetime.
+#
+# 使用 platform.system() 检测并缓存结果，因为操作系统在进程生命周期内不会改变。
+#
+# Returns:
+#     "linux", "windows", or "macos"
+#     "linux"、"windows" 或 "macos"
 @functools.lru_cache(maxsize=1)
 def detect_platform() -> str:
-    """Detect the current operating system.
-
-    检测当前操作系统。
-
-    Uses platform.system() and caches the result since the OS never
-    changes during a single process lifetime.
-
-    使用 platform.system() 检测并缓存结果，因为操作系统在进程生命周期内不会改变。
-
-    Returns:
-        "linux", "windows", or "macos"
-        "linux"、"windows" 或 "macos"
-    """
     system = platform.system().lower()
     if system == "linux":
         return "linux"
@@ -45,34 +44,37 @@ def detect_platform() -> str:
 IS_WINDOWS = detect_platform() == "windows"
 
 
+# Check whether *name* is on PATH (cross-platform).
+#
+# 检查命令 *name* 是否存在于 PATH 中（跨平台）。
+#
+# Results are cached because PATH does not change during execution.
+#
+# 结果会被缓存，因为 PATH 在执行期间不会改变。
+#
+# Args:
+#     name: Command name to look for / 要查找的命令名称
+#
+# Returns:
+#     True if the command is found / 命令存在时返回 True
+@functools.lru_cache(maxsize=None)
 def command_exists(name: str) -> bool:
-    """Check whether *name* is on PATH (cross-platform).
-
-    检查命令 *name* 是否存在于 PATH 中（跨平台）。
-
-    Args:
-        name: Command name to look for / 要查找的命令名称
-
-    Returns:
-        True if the command is found / 命令存在时返回 True
-    """
     return shutil.which(name) is not None
 
 
+# Check if the current process has root/admin privileges.
+#
+# 检查当前进程是否拥有 root/管理员权限。
+#
+# On Windows, uses ctypes to check admin status.
+# On Linux/macOS, checks if effective UID is 0.
+#
+# 在 Windows 上使用 ctypes 检查管理员状态；
+# 在 Linux/macOS 上检查有效 UID 是否为 0。
+#
+# Returns:
+#     True if running with elevated privileges / 以提升权限运行时返回 True
 def is_root() -> bool:
-    """Check if the current process has root/admin privileges.
-
-    检查当前进程是否拥有 root/管理员权限。
-
-    On Windows, uses ctypes to check admin status.
-    On Linux/macOS, checks if effective UID is 0.
-
-    在 Windows 上使用 ctypes 检查管理员状态；
-    在 Linux/macOS 上检查有效 UID 是否为 0。
-
-    Returns:
-        True if running with elevated privileges / 以提升权限运行时返回 True
-    """
     if IS_WINDOWS:
         try:
             import ctypes

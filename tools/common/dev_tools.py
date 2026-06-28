@@ -39,18 +39,18 @@ TOOLCHAIN_OPTIONS = [
 ]
 
 
+# Check whether a package is already installed on the system.
+#
+# 检查系统中是否已安装指定的软件包。
+#
+# Args:
+#     pkg: Package name to check. / 要检查的软件包名称。
+#     distro: Distribution identifier (arch, fedora, suse, debian, etc.). / 发行版标识符。
+#
+# Returns:
+#     True if installed, False otherwise. / 已安装返回 True，否则返回 False。
+
 def _is_installed(pkg: str, distro: str) -> bool:
-    """Check whether a package is already installed on the system.
-
-    检查系统中是否已安装指定的软件包。
-
-    Args:
-        pkg: Package name to check. / 要检查的软件包名称。
-        distro: Distribution identifier (arch, fedora, suse, debian, etc.). / 发行版标识符。
-
-    Returns:
-        True if installed, False otherwise. / 已安装返回 True，否则返回 False。
-    """
     # Use distro-specific query commands to check package status
     # 使用发行版特定的查询命令来检查包的状态
     if distro == "arch":
@@ -63,18 +63,18 @@ def _is_installed(pkg: str, distro: str) -> bool:
     return code == 0
 
 
+# Install a list of packages using the distro's native package manager.
+#
+# 使用发行版的原生包管理器安装一组软件包。
+#
+# Args:
+#     pkgs: List of package names to install. / 要安装的软件包名称列表。
+#     distro: Distribution identifier (arch, fedora, suse, debian, etc.). / 发行版标识符。
+#
+# Returns:
+#     True if all packages installed successfully, False otherwise. / 全部安装成功返回 True，否则返回 False。
+
 def _install_packages(pkgs: list[str], distro: str) -> bool:
-    """Install a list of packages using the distro's native package manager.
-
-    使用发行版的原生包管理器安装一组软件包。
-
-    Args:
-        pkgs: List of package names to install. / 要安装的软件包名称列表。
-        distro: Distribution identifier (arch, fedora, suse, debian, etc.). / 发行版标识符。
-
-    Returns:
-        True if all packages installed successfully, False otherwise. / 全部安装成功返回 True，否则返回 False。
-    """
     if distro == "arch":
         code = run_verbose(["sudo", "pacman", "-S", "--noconfirm"] + pkgs)
     elif distro == "fedora":
@@ -115,18 +115,19 @@ class DevToolsSetup(Tool):
     requires_network = True  # Package download requires network / 下载安装包需要网络
     requires_sudo = True  # Package installation requires root privileges / 安装包需要 root 权限
 
+    # Install a specific toolchain for the detected distribution.
+    #
+    # 为检测到的发行版安装指定的工具链。
+    #
+    # Args:
+    #     option: Toolchain option dict containing package lists per distro. / 包含各发行版软件包列表的工具链选项字典。
+    #     distro: Detected distribution identifier. / 检测到的发行版标识符。
+    #
+    #
+    # Returns:
+    #     True if installation succeeded or already installed, False on failure. / 安装成功或已安装返回 True，安装失败返回 False。
+
     def _install_toolchain(self, option: dict, distro: str) -> bool:
-        """Install a specific toolchain for the detected distribution.
-
-        为检测到的发行版安装指定的工具链。
-
-        Args:
-            option: Toolchain option dict containing package lists per distro. / 包含各发行版软件包列表的工具链选项字典。
-            distro: Detected distribution identifier. / 检测到的发行版标识符。
-
-        Returns:
-            True if installation succeeded or already installed, False on failure. / 安装成功或已安装返回 True，安装失败返回 False。
-        """
         # Select distro-specific package list, falling back to debian_pkgs as default
         # 选择发行版特定的包列表，默认回退到 debian_pkgs
         if distro == "arch":
@@ -152,18 +153,18 @@ class DevToolsSetup(Tool):
         print_success(t("msg.devtool_install_success", toolchain=t(option["name_key"])))
         return True
 
+    # Execute the dev tools setup workflow.
+    #
+    # 执行开发工具设置工作流程。
+    #
+    # Prompts the user to select a toolchain, then installs it.
+    # 提示用户选择一个工具链，然后进行安装。
+    #
+    # Returns:
+    #     True if installation succeeded, False on failure, None if user cancelled.
+    #     安装成功返回 True，失败返回 False，用户取消返回 None。
+
     def run(self) -> bool | None:
-        """Execute the dev tools setup workflow.
-
-        执行开发工具设置工作流程。
-
-        Prompts the user to select a toolchain, then installs it.
-        提示用户选择一个工具链，然后进行安装。
-
-        Returns:
-            True if installation succeeded, False on failure, None if user cancelled.
-            安装成功返回 True，失败返回 False，用户取消返回 None。
-        """
         distro = detect_distro()
 
         choice = prompt_selection(t("msg.devtool_select"), TOOLCHAIN_OPTIONS)

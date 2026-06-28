@@ -43,14 +43,13 @@ from tools import get_tools, TOOLS
 from utils.i18n import t, set_lang, get_lang, SUPPORTED_LANGS, tool_display_name, tool_description
 
 
+# Parse command-line arguments.
+#
+# 解析命令行参数。
+#
+# Returns:
+#     Parsed arguments namespace / 解析后的参数命名空间
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments.
-
-    解析命令行参数。
-
-    Returns:
-        Parsed arguments namespace / 解析后的参数命名空间
-    """
     parser = argparse.ArgumentParser(
         description="LinuxScriptToolbox - Quick tools for various Linux distributions"
     )
@@ -69,19 +68,18 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+# Find a tool by its name attribute, filtered by distro and platform.
+#
+# 按名称查找工具，按发行版和平台过滤。
+#
+# Args:
+#     name: Tool name to search for / 要搜索的工具名称
+#     distro: Distribution filter / 发行版过滤条件
+#     platform: Platform filter / 平台过滤条件
+#
+# Returns:
+#     Tool instance if found, None otherwise / 找到则返回 Tool 实例，否则返回 None
 def find_tool(name: str, distro: str = None, platform: str = None):
-    """Find a tool by its name attribute, filtered by distro and platform.
-
-    按名称查找工具，按发行版和平台过滤。
-
-    Args:
-        name: Tool name to search for / 要搜索的工具名称
-        distro: Distribution filter / 发行版过滤条件
-        platform: Platform filter / 平台过滤条件
-
-    Returns:
-        Tool instance if found, None otherwise / 找到则返回 Tool 实例，否则返回 None
-    """
     tools = get_tools(distro, platform) if distro or platform else TOOLS
     for tool in tools:
         if tool.name == name:
@@ -89,11 +87,10 @@ def find_tool(name: str, distro: str = None, platform: str = None):
     return None
 
 
+# Print all available tools with their display names and descriptions.
+#
+# 打印所有可用工具的显示名称和描述。
 def list_tools() -> None:
-    """Print all available tools with their display names and descriptions.
-
-    打印所有可用工具的显示名称和描述。
-    """
     current_platform = detect_platform()
     distro = detect_distro()
     tools = get_tools(distro, current_platform)
@@ -105,11 +102,10 @@ def list_tools() -> None:
         print(f"  {'':24s} {tool_description(tool)}")
 
 
+# Show language selection menu and apply the chosen language.
+#
+# 显示语言选择菜单并应用所选语言。
 def select_language() -> None:
-    """Show language selection menu and apply the chosen language.
-
-    显示语言选择菜单并应用所选语言。
-    """
     langs = list(SUPPORTED_LANGS.items())
     options = [(code, label) for code, label in langs]
     result = select_option(t("ui.select_language"), options, default=get_lang())
@@ -117,21 +113,20 @@ def select_language() -> None:
         set_lang(result)
 
 
+# Main entry point — parse args, detect environment, run tools.
+#
+# 主入口 — 解析参数、检测环境、运行工具。
+#
+# Supports three modes:
+# 1. --list-tools: list available tools and exit
+# 2. --tool NAME: run a specific tool non-interactively
+# 3. Interactive: show menu for tool selection
+#
+# 支持三种模式：
+# 1. --list-tools：列出可用工具后退出
+# 2. --tool NAME：非交互式运行指定工具
+# 3. 交互式：显示工具选择菜单
 def main() -> None:
-    """Main entry point — parse args, detect environment, run tools.
-
-    主入口 — 解析参数、检测环境、运行工具。
-
-    Supports three modes:
-    1. --list-tools: list available tools and exit
-    2. --tool NAME: run a specific tool non-interactively
-    3. Interactive: show menu for tool selection
-
-    支持三种模式：
-    1. --list-tools：列出可用工具后退出
-    2. --tool NAME：非交互式运行指定工具
-    3. 交互式：显示工具选择菜单
-    """
     args = parse_args()
 
     # Apply language override if specified / 如果指定了语言则应用

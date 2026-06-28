@@ -9,20 +9,19 @@ import sys
 from pathlib import Path
 
 
+# Run the current script under the project's virtual environment.
+#
+# 在项目的虚拟环境下运行当前脚本。如果当前已处于虚拟环境中则直接返回，
+# 否则查找已有的 .venv 并通过 os.execvp 切换到虚拟环境 Python；
+# 若 .venv 不存在则先创建虚拟环境并安装依赖。
+#
+# Args:
+#     project_dir: The root directory of the project. / 项目的根目录路径。
+#
+# Raises:
+#     SystemExit: If creating the venv or installing dependencies fails. /
+#         如果创建虚拟环境或安装依赖失败，则抛出 SystemExit。
 def ensure_venv(project_dir: Path) -> None:
-    """Run the current script under the project's virtual environment.
-
-    在项目的虚拟环境下运行当前脚本。如果当前已处于虚拟环境中则直接返回，
-    否则查找已有的 .venv 并通过 os.execvp 切换到虚拟环境 Python；
-    若 .venv 不存在则先创建虚拟环境并安装依赖。
-
-    Args:
-        project_dir: The root directory of the project. / 项目的根目录路径。
-
-    Raises:
-        SystemExit: If creating the venv or installing dependencies fails. /
-            如果创建虚拟环境或安装依赖失败，则抛出 SystemExit。
-    """
     # Already inside a virtualenv, nothing to do / 已经在虚拟环境中，无需操作
     if sys.prefix != sys.base_prefix:
         return
@@ -37,21 +36,20 @@ def ensure_venv(project_dir: Path) -> None:
     _setup_venv(project_dir, venv_dir, project_dir / "requirements.txt")
 
 
+# Create .venv, install dependencies, and re-exec under venv Python.
+#
+# 创建 .venv 虚拟环境、安装 requirements.txt 中的依赖，
+# 然后通过 os.execvp 重新以虚拟环境中的 Python 解释器执行当前脚本。
+#
+# Args:
+#     project_dir: The root directory of the project. / 项目的根目录路径。
+#     venv_dir: The path to the virtualenv directory. / 虚拟环境目录的路径。
+#     requirements: The path to the requirements.txt file. / requirements.txt 文件的路径。
+#
+# Raises:
+#     SystemExit: If creating the venv or installing dependencies fails. /
+#         如果创建虚拟环境或安装依赖失败，则抛出 SystemExit。
 def _setup_venv(project_dir: Path, venv_dir: Path, requirements: Path) -> None:
-    """Create .venv, install dependencies, and re-exec under venv Python.
-
-    创建 .venv 虚拟环境、安装 requirements.txt 中的依赖，
-    然后通过 os.execvp 重新以虚拟环境中的 Python 解释器执行当前脚本。
-
-    Args:
-        project_dir: The root directory of the project. / 项目的根目录路径。
-        venv_dir: The path to the virtualenv directory. / 虚拟环境目录的路径。
-        requirements: The path to the requirements.txt file. / requirements.txt 文件的路径。
-
-    Raises:
-        SystemExit: If creating the venv or installing dependencies fails. /
-            如果创建虚拟环境或安装依赖失败，则抛出 SystemExit。
-    """
     print("Creating virtual environment...")
     # Use stdlib venv module to create the virtual environment / 使用标准库 venv 模块创建虚拟环境
     if subprocess.run([sys.executable, "-m", "venv", str(venv_dir)]).returncode != 0:

@@ -41,14 +41,16 @@ CONFIG_FILES = {
 }
 
 
+# Get or create backup directory.
+
 def _get_backup_dir() -> Path:
-    """Get or create backup directory."""
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
     return BACKUP_DIR
 
 
+# List available backups.
+
 def _list_backups() -> list[dict]:
-    """List available backups."""
     backup_dir = _get_backup_dir()
     backups = []
 
@@ -64,8 +66,9 @@ def _list_backups() -> list[dict]:
     return backups
 
 
+# Create a backup of critical config files.
+
 def _create_backup() -> bool:
-    """Create a backup of critical config files."""
     print_info(t("msg.backup_creating"))
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -99,8 +102,9 @@ def _create_backup() -> bool:
     return True
 
 
+# Restore a backup.
+
 def _restore_backup() -> bool:
-    """Restore a backup."""
     backups = _list_backups()
 
     if not backups:
@@ -156,8 +160,9 @@ def _restore_backup() -> bool:
     return True
 
 
+# List all available backups.
+
 def _list_all_backups() -> bool:
-    """List all available backups."""
     backups = _list_backups()
 
     if not backups:
@@ -199,8 +204,9 @@ class BackupRestore(Tool):
         return False
 
 
+    # Preview which system files would be backed up.
+
     def run_dry(self) -> str | None:
-        """Preview which system files would be backed up."""
         files = ["/etc/fstab", "/etc/default/grub", "/etc/ssh/sshd_config", "/etc/sysctl.conf"]
         existing, missing = [], []
         for f in files:

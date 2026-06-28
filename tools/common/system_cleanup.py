@@ -44,8 +44,9 @@ CLEANUP_OPTIONS = [
 ]
 
 
+# Clean package manager cache.
+
 def _clean_pkg_cache(distro: str) -> bool:
-    """Clean package manager cache."""
     print_info(t("msg.cleanup_pkg_cache_running"))
 
     if distro == "arch":
@@ -69,8 +70,9 @@ def _clean_pkg_cache(distro: str) -> bool:
     return True
 
 
+# Clean systemd journal logs older than 7 days.
+
 def _clean_journal() -> bool:
-    """Clean systemd journal logs older than 7 days."""
     print_info(t("msg.cleanup_journal_running"))
 
     # Check if journalctl exists
@@ -93,8 +95,9 @@ def _clean_journal() -> bool:
     return True
 
 
+# Clean temporary files.
+
 def _clean_temp_files() -> bool:
-    """Clean temporary files."""
     print_info(t("msg.cleanup_temp_running"))
 
     # Clean /tmp files older than 7 days
@@ -170,8 +173,9 @@ class SystemCleanup(Tool):
         return False
 
 
+    # Preview cleanup operations.
+
     def run_dry(self) -> str | None:
-        """Preview cleanup operations."""
         distro = detect_distro()
         lines = ["[DRY-RUN] System Cleanup would:", ""]
         if distro == "arch":

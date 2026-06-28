@@ -43,11 +43,11 @@ INFO_OPTIONS = [
 ]
 
 
-def _show_hardware() -> bool:
-    """Display hardware overview.
+# Display hardware overview.
+#
+# 显示硬件概览信息。
 
-    显示硬件概览信息。
-    """
+def _show_hardware() -> bool:
     print_info(t("msg.info_hardware_running"))
 
     if IS_WINDOWS:
@@ -79,11 +79,11 @@ def _show_hardware() -> bool:
     return True
 
 
-def _show_hardware_windows() -> bool:
-    """Display hardware overview on Windows.
+# Display hardware overview on Windows.
+#
+# 在 Windows 系统上显示硬件概览信息。
 
-    在 Windows 系统上显示硬件概览信息。
-    """
+def _show_hardware_windows() -> bool:
     # CPU info via WMIC / 通过 WMIC 获取 CPU 信息
     code, cpu = run_cmd(["wmic", "cpu", "get", "name"])
     if code == 0 and cpu:
@@ -114,11 +114,11 @@ def _show_hardware_windows() -> bool:
     return True
 
 
-def _show_disk() -> bool:
-    """Display disk usage.
+# Display disk usage.
+#
+# 显示磁盘使用情况。
 
-    显示磁盘使用情况。
-    """
+def _show_disk() -> bool:
     print_info(t("msg.info_disk_running"))
 
     if IS_WINDOWS:
@@ -147,11 +147,11 @@ def _show_disk() -> bool:
     return True
 
 
-def _show_disk_windows() -> bool:
-    """Display disk usage on Windows.
+# Display disk usage on Windows.
+#
+# 在 Windows 系统上显示磁盘使用情况。
 
-    在 Windows 系统上显示磁盘使用情况。
-    """
+def _show_disk_windows() -> bool:
     # Disk usage via WMIC / 通过 WMIC 获取磁盘使用情况
     code, disk = run_cmd(["wmic", "logicaldisk", "get", "size,freespace,caption"])
     if code == 0 and disk:
@@ -187,11 +187,11 @@ def _show_disk_windows() -> bool:
     return True
 
 
-def _show_network() -> bool:
-    """Display network status.
+# Display network status.
+#
+# 显示网络状态信息。
 
-    显示网络状态信息。
-    """
+def _show_network() -> bool:
     print_info(t("msg.info_network_running"))
 
     if IS_WINDOWS:
@@ -222,11 +222,11 @@ def _show_network() -> bool:
     return True
 
 
-def _show_network_windows() -> bool:
-    """Display network status on Windows.
+# Display network status on Windows.
+#
+# 在 Windows 系统上显示网络状态信息。
 
-    在 Windows 系统上显示网络状态信息。
-    """
+def _show_network_windows() -> bool:
     # IP addresses / IP 地址
     code, ip = run_cmd(["ipconfig"])
     if code == 0 and ip:
@@ -248,11 +248,11 @@ def _show_network_windows() -> bool:
     return True
 
 
-def _show_services() -> bool:
-    """Display running services.
+# Display running services.
+#
+# 显示正在运行的服务信息。
 
-    显示正在运行的服务信息。
-    """
+def _show_services() -> bool:
     print_info(t("msg.info_services_running"))
 
     if IS_WINDOWS:
@@ -282,11 +282,11 @@ def _show_services() -> bool:
     return True
 
 
-def _show_services_windows() -> bool:
-    """Display running services on Windows.
+# Display running services on Windows.
+#
+# 在 Windows 系统上显示正在运行的服务信息。
 
-    在 Windows 系统上显示正在运行的服务信息。
-    """
+def _show_services_windows() -> bool:
     # Running services via sc / 通过 sc 查询正在运行的服务
     code, services = run_cmd(["sc", "query", "type=", "service", "state=", "running"])
     if code == 0 and services:
@@ -325,11 +325,11 @@ class SystemInfo(Tool):
     mutates_system = False  # Does not modify system / 不修改系统
     safe_for_run_all = True  # Safe to run all info at once / 可以安全地一次运行所有信息
 
-    def run_all(self) -> bool | None:
-        """Run all system info displays in sequence.
+    # Run all system info displays in sequence.
+    #
+    # 依次运行所有系统信息显示。
 
-        依次运行所有系统信息显示。
-        """
+    def run_all(self) -> bool | None:
         _show_hardware()
         console.print()
         _show_disk()
@@ -339,11 +339,11 @@ class SystemInfo(Tool):
         _show_services()
         return True
 
-    def run(self) -> bool | None:
-        """Run the tool interactively, prompting user to select which info to display.
+    # Run the tool interactively, prompting user to select which info to display.
+    #
+    # 交互式运行工具，提示用户选择要显示的信息类型。
 
-        交互式运行工具，提示用户选择要显示的信息类型。
-        """
+    def run(self) -> bool | None:
         choice = prompt_selection(t("msg.info_select"), INFO_OPTIONS)
 
         if choice is None or choice == BACK_ACTION:

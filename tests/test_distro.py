@@ -18,10 +18,12 @@ PROJECT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
 
+# Test detect_distro() function on Linux
 class TestDetectDistro(TestCase):
-    """Test detect_distro() function on Linux."""
 
     def setUp(self):
+        from utils.distro import detect_distro
+        detect_distro.cache_clear()
         self._patch_platform = patch("utils.distro.detect_platform", return_value="linux")
         self._patch_path = patch("utils.distro.Path")
         self.mock_platform = self._patch_platform.start()
@@ -37,111 +39,113 @@ class TestDetectDistro(TestCase):
         mock_os_release.read_text.return_value = content
         self.mock_path.return_value = mock_os_release
 
+    # Test detection of Arch Linux
     def test_arch_linux(self):
-        """Test detection of Arch Linux."""
         self._set_os_release('ID=arch\nNAME="Arch Linux"')
         from utils.distro import detect_distro
         self.assertEqual(detect_distro(), "arch")
 
+    # Test detection of Arch-like distros (e.g., Manjaro)
     def test_arch_like(self):
-        """Test detection of Arch-like distros (e.g., Manjaro)."""
         self._set_os_release('ID=manjaro\nID_LIKE=arch')
         from utils.distro import detect_distro
         self.assertEqual(detect_distro(), "arch")
 
+    # Test detection of Debian
     def test_debian(self):
-        """Test detection of Debian."""
         self._set_os_release('ID=debian\nNAME="Debian GNU/Linux"')
         from utils.distro import detect_distro
         self.assertEqual(detect_distro(), "debian")
 
+    # Test detection of Ubuntu
     def test_ubuntu(self):
-        """Test detection of Ubuntu."""
         self._set_os_release('ID=ubuntu\nNAME="Ubuntu"')
         from utils.distro import detect_distro
         self.assertEqual(detect_distro(), "debian")
 
+    # Test detection of Debian-like distros (ID_LIKE=debian)
     def test_debian_like(self):
-        """Test detection of Debian-like distros (ID_LIKE=debian)."""
         self._set_os_release('ID=linuxmint\nID_LIKE=debian')
         from utils.distro import detect_distro
         self.assertEqual(detect_distro(), "debian")
 
+    # Test detection of Fedora
     def test_fedora(self):
-        """Test detection of Fedora."""
         self._set_os_release('ID=fedora\nNAME="Fedora Linux"')
         from utils.distro import detect_distro
         self.assertEqual(detect_distro(), "fedora")
 
+    # Test detection of openSUSE
     def test_opensuse(self):
-        """Test detection of openSUSE."""
         self._set_os_release('ID=opensuse\nNAME="openSUSE Tumbleweed"')
         from utils.distro import detect_distro
         self.assertEqual(detect_distro(), "suse")
 
+    # Test detection of SUSE
     def test_suse(self):
-        """Test detection of SUSE."""
         self._set_os_release('ID=suse\nNAME="SUSE Linux"')
         from utils.distro import detect_distro
         self.assertEqual(detect_distro(), "suse")
 
+    # Test detection of unknown distribution
     def test_unknown_distro(self):
-        """Test detection of unknown distribution."""
         self._set_os_release('ID=centos\nNAME="CentOS Linux"')
         from utils.distro import detect_distro
         self.assertEqual(detect_distro(), "unknown")
 
+    # Test when /etc/os-release does not exist
     def test_no_os_release(self):
-        """Test when /etc/os-release does not exist."""
         mock_os_release = MagicMock()
         mock_os_release.exists.return_value = False
         self.mock_path.return_value = mock_os_release
         from utils.distro import detect_distro
         self.assertEqual(detect_distro(), "unknown")
 
+    # ID=archcraft alone should NOT match as arch (regression test)
     def test_archcraft_not_arch(self):
-        """ID=archcraft alone should NOT match as arch (regression test)."""
         self._set_os_release('ID=archcraft\nNAME="ArchCraft"')
         from utils.distro import detect_distro
         self.assertEqual(detect_distro(), "unknown")
 
+    # ID=archcraft with ID_LIKE=arch should match as arch
     def test_archcraft_with_arch_id_like(self):
-        """ID=archcraft with ID_LIKE=arch should match as arch."""
         self._set_os_release('ID=archcraft\nID_LIKE=arch')
         from utils.distro import detect_distro
         self.assertEqual(detect_distro(), "arch")
 
+    # ID=opensuse-tumbleweed should match as suse
     def test_opensuse_tumbleweed(self):
-        """ID=opensuse-tumbleweed should match as suse."""
         self._set_os_release('ID=opensuse-tumbleweed')
         from utils.distro import detect_distro
         self.assertEqual(detect_distro(), "suse")
 
 
+# Test detect_distro() function on Windows
 class TestDetectDistroWindows(TestCase):
-    """Test detect_distro() function on Windows."""
 
+    # Test that Windows platform returns 'windows' distro
     @patch("utils.distro.detect_platform", return_value="windows")
     def test_windows_returns_windows(self, mock_platform):
-        """Test that Windows platform returns 'windows' distro."""
         from utils.distro import detect_distro
+        detect_distro.cache_clear()
         result = detect_distro()
         self.assertEqual(result, "windows")
 
 
+# Test detect_distro() function on macOS
 class TestDetectDistroMacOS(TestCase):
-    """Test detect_distro() function on macOS."""
 
+    # Test that macOS platform returns 'macos' distro
     @patch("utils.distro.detect_platform", return_value="macos")
     def test_macos_returns_macos(self, mock_platform):
-        """Test that macOS platform returns 'macos' distro."""
         from utils.distro import detect_distro
+        detect_distro.cache_clear()
         result = detect_distro()
         self.assertEqual(result, "macos")
 
 
+# Standalone test runner
 def run_tests():
-    """Standalone test runner."""
     print("Running distro detection unit tests...")
     print("=" * 60)
     unittest_main(module=__name__, exit=False, verbosity=2)

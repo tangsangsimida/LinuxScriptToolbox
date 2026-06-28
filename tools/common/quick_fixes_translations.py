@@ -89,7 +89,7 @@ register_translations("zh", {
     "msg.qfix_npm_permissions": "npm 全局权限修复",
     "msg.qfix_npm_permissions_desc": "修复 npm 全局目录权限，使当前用户可写",
     "msg.qfix_npm_prefix_failed": "获取 npm 前缀失败。",
-    "msg.qfix_npm_reload_hint": "运行 'source ~/.bashrc' 或重启 shell 以应用更改。",
+    "msg.qfix_npm_reload_hint": "运行 '{hint}' 或重启 shell 以应用更改。",
     "msg.qfix_npm_success": "npm 全局目录已配置：{dir}",
     "msg.qfix_npm_updating_profile": "正在更新 shell 配置文件：{profile}",
     "msg.qfix_path_invalid": "路径无效：{path}",

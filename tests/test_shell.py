@@ -17,146 +17,146 @@ PROJECT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
 
+# Test detect_shell() function on Unix-like systems
 class TestDetectShell(TestCase):
-    """Test detect_shell() function on Unix-like systems."""
 
     def setUp(self):
         from utils.platform import detect_platform
         detect_platform.cache_clear()
 
+    # Test bash detection via SHELL env var
     @patch("utils.shell.detect_platform", return_value="linux")
     @patch.dict("os.environ", {"SHELL": "/bin/bash"}, clear=False)
     def test_bash_via_shell_env(self, mock_platform):
-        """Test bash detection via SHELL env var."""
         from utils.shell import detect_shell
         result = detect_shell()
         self.assertEqual(result, "bash")
 
+    # Test zsh detection via SHELL env var
     @patch("utils.shell.detect_platform", return_value="linux")
     @patch.dict("os.environ", {"SHELL": "/usr/bin/zsh"}, clear=False)
     def test_zsh_via_shell_env(self, mock_platform):
-        """Test zsh detection via SHELL env var."""
         from utils.shell import detect_shell
         result = detect_shell()
         self.assertEqual(result, "zsh")
 
+    # Test fish detection via SHELL env var
     @patch("utils.shell.detect_platform", return_value="linux")
     @patch.dict("os.environ", {"SHELL": "/usr/bin/fish"}, clear=False)
     def test_fish_via_shell_env(self, mock_platform):
-        """Test fish detection via SHELL env var."""
         from utils.shell import detect_shell
         result = detect_shell()
         self.assertEqual(result, "fish")
 
+    # Test dash detection via SHELL env var
     @patch("utils.shell.detect_platform", return_value="linux")
     @patch.dict("os.environ", {"SHELL": "/usr/bin/dash"}, clear=False)
     def test_dash_via_shell_env(self, mock_platform):
-        """Test dash detection via SHELL env var."""
         from utils.shell import detect_shell
         result = detect_shell()
         self.assertEqual(result, "dash")
 
+    # Test fish detection via FISH_VERSION env var
     @patch("utils.shell.detect_platform", return_value="linux")
     @patch.dict("os.environ", {"FISH_VERSION": "3.6.0"}, clear=True)
     def test_fish_via_version_env(self, mock_platform):
-        """Test fish detection via FISH_VERSION env var."""
         from utils.shell import detect_shell
         result = detect_shell()
         self.assertEqual(result, "fish")
 
+    # Test zsh detection via ZSH_VERSION env var
     @patch("utils.shell.detect_platform", return_value="linux")
     @patch.dict("os.environ", {"ZSH_VERSION": "5.9"}, clear=True)
     def test_zsh_via_version_env(self, mock_platform):
-        """Test zsh detection via ZSH_VERSION env var."""
         from utils.shell import detect_shell
         result = detect_shell()
         self.assertEqual(result, "zsh")
 
+    # Test bash detection via BASH_VERSION env var
     @patch("utils.shell.detect_platform", return_value="linux")
     @patch.dict("os.environ", {"BASH_VERSION": "5.2.15"}, clear=True)
     def test_bash_via_version_env(self, mock_platform):
-        """Test bash detection via BASH_VERSION env var."""
         from utils.shell import detect_shell
         result = detect_shell()
         self.assertEqual(result, "bash")
 
+    # Test nushell detection via NU_VERSION env var
     @patch("utils.shell.detect_platform", return_value="linux")
     @patch.dict("os.environ", {"NU_VERSION": "0.80.0"}, clear=True)
     def test_nushell_via_version_env(self, mock_platform):
-        """Test nushell detection via NU_VERSION env var."""
         from utils.shell import detect_shell
         result = detect_shell()
         self.assertEqual(result, "nushell")
 
+    # Test unknown shell detection
     @patch("utils.shell.detect_platform", return_value="linux")
     @patch.dict("os.environ", {}, clear=True)
     @patch("utils.shell._detect_parent_process", return_value="unknown")
     def test_unknown_shell(self, mock_parent, mock_platform):
-        """Test unknown shell detection."""
         from utils.shell import detect_shell
         result = detect_shell()
         self.assertEqual(result, "unknown")
 
 
+# Test detect_shell() function on Windows
 class TestDetectShellWindows(TestCase):
-    """Test detect_shell() function on Windows."""
 
     def setUp(self):
         from utils.platform import detect_platform
         detect_platform.cache_clear()
 
+    # Test PowerShell detection on Windows
     @patch("utils.shell.detect_platform", return_value="windows")
     @patch.dict("os.environ", {"PSModulePath": "C:\\Modules"}, clear=True)
     @patch("utils.shell.shutil.which", return_value=r"C:\Program Files\PowerShell\7\pwsh.exe")
     def test_powershell(self, mock_which, mock_platform):
-        """Test PowerShell detection on Windows."""
         from utils.shell import detect_shell
         result = detect_shell()
         self.assertEqual(result, "pwsh")
 
+    # Test legacy Windows PowerShell detection
     @patch("utils.shell.detect_platform", return_value="windows")
     @patch.dict("os.environ", {"PSModulePath": "C:\\Modules"}, clear=True)
     @patch("utils.shell.shutil.which", return_value=None)
     def test_powershell_legacy(self, mock_which, mock_platform):
-        """Test legacy Windows PowerShell detection."""
         from utils.shell import detect_shell
         result = detect_shell()
         self.assertEqual(result, "powershell")
 
+    # Test cmd detection on Windows
     @patch("utils.shell.detect_platform", return_value="windows")
     @patch.dict("os.environ", {"COMSPEC": "C:\\Windows\\system32\\cmd.exe"}, clear=True)
     def test_cmd(self, mock_platform):
-        """Test cmd detection on Windows."""
         from utils.shell import detect_shell
         result = detect_shell()
         self.assertEqual(result, "cmd")
 
 
+# Test get_shell_info() function
 class TestGetShellInfo(TestCase):
-    """Test get_shell_info() function."""
 
+    # Test getting bash shell info
     @patch("utils.shell.detect_shell", return_value="bash")
     @patch.dict("os.environ", {"SHELL": "/bin/bash"}, clear=False)
     def test_bash_info(self, mock_detect):
-        """Test getting bash shell info."""
         from utils.shell import get_shell_info
         info = get_shell_info()
         self.assertEqual(info["name"], "bash")
         self.assertIn("version", info)
         self.assertIn("path", info)
 
+    # Test getting fish shell info
     @patch("utils.shell.detect_shell", return_value="fish")
     @patch.dict("os.environ", {"SHELL": "/usr/bin/fish"}, clear=False)
     def test_fish_info(self, mock_detect):
-        """Test getting fish shell info."""
         from utils.shell import get_shell_info
         info = get_shell_info()
         self.assertEqual(info["name"], "fish")
         self.assertIn("version", info)
         self.assertIn("path", info)
 
+# Test the shell utility functions (rc file, detection helpers)
 class TestShellUtilities(TestCase):
-    """Test the shell utility functions (rc file, detection helpers)."""
 
     def setUp(self):
         from utils.platform import detect_platform
@@ -224,8 +224,8 @@ class TestShellUtilities(TestCase):
 
 
 
+# Standalone test runner
 def run_tests():
-    """Standalone test runner."""
     print("Running shell detection unit tests...")
     print("=" * 60)
     unittest_main(module=__name__, exit=False, verbosity=2)

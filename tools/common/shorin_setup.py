@@ -84,15 +84,15 @@ class ShorinSetup(Tool):
     requires_network = True  # Requires internet access for git clone / 需要网络连接以进行 git clone
     requires_sudo = True  # Requires sudo for package installation / 需要 sudo 权限以安装软件包
 
+    # Clone the shorin-arch-setup repository to a local temp directory.
+    #
+    # 克隆 shorin-arch-setup 仓库到本地临时目录。
+    #
+    # Returns:
+    #     True if cloning succeeded, False otherwise.
+    #     克隆成功返回 True，否则返回 False。
+
     def _clone_repo(self) -> bool:
-        """Clone the shorin-arch-setup repository to a local temp directory.
-
-        克隆 shorin-arch-setup 仓库到本地临时目录。
-
-        Returns:
-            True if cloning succeeded, False otherwise.
-            克隆成功返回 True，否则返回 False。
-        """
         # Remove existing clone to ensure a fresh copy / 删除已有克隆以确保获取全新副本
         if SHORIN_DIR.exists():
             shutil.rmtree(SHORIN_DIR)
@@ -104,19 +104,20 @@ class ShorinSetup(Tool):
             return False
         return True
 
+    # Run shorin setup script directly on Arch Linux.
+    #
+    # 在 Arch Linux 上直接运行 shorin 安装脚本。
+    #
+    # Args:
+    #     script_path: Relative path to the setup script within the cloned repo.
+    #     克隆仓库中安装脚本的相对路径。
+    #
+    #
+    # Returns:
+    #     True if the script ran successfully, False otherwise.
+    #     脚本运行成功返回 True，否则返回 False。
+
     def _run_arch_setup(self, script_path: str) -> bool:
-        """Run shorin setup script directly on Arch Linux.
-
-        在 Arch Linux 上直接运行 shorin 安装脚本。
-
-        Args:
-            script_path: Relative path to the setup script within the cloned repo.
-                克隆仓库中安装脚本的相对路径。
-
-        Returns:
-            True if the script ran successfully, False otherwise.
-            脚本运行成功返回 True，否则返回 False。
-        """
         full_path = SHORIN_DIR / script_path
         if not full_path.exists():
             print_error(t("msg.script_not_found", script=script_path))
@@ -128,26 +129,27 @@ class ShorinSetup(Tool):
         code = run_verbose(["bash", str(full_path)])
         return code == 0
 
+    # Run adapted desktop environment setup for Ubuntu/Debian.
+    #
+    # 为 Ubuntu/Debian 运行适配后的桌面环境安装。
+    #
+    # Instead of using the native Arch scripts, this method installs desktop
+    # environments via Ubuntu PPAs and apt packages that provide equivalent
+    # functionality.
+    #
+    # 该方法不使用原生 Arch 脚本，而是通过 Ubuntu PPA 和 apt 软件包
+    # 安装提供等效功能的桌面环境。
+    #
+    # Args:
+    #     option_key: The desktop environment identifier (e.g. "niri", "dms", "kde", "gnome").
+    #     桌面环境标识符（如 "niri"、"dms"、"kde"、"gnome"）。
+    #
+    #
+    # Returns:
+    #     True if all packages installed successfully, False otherwise.
+    #     所有软件包安装成功返回 True，否则返回 False。
+
     def _run_ubuntu_setup(self, option_key: str) -> bool:
-        """Run adapted desktop environment setup for Ubuntu/Debian.
-
-        为 Ubuntu/Debian 运行适配后的桌面环境安装。
-
-        Instead of using the native Arch scripts, this method installs desktop
-        environments via Ubuntu PPAs and apt packages that provide equivalent
-        functionality.
-
-        该方法不使用原生 Arch 脚本，而是通过 Ubuntu PPA 和 apt 软件包
-        安装提供等效功能的桌面环境。
-
-        Args:
-            option_key: The desktop environment identifier (e.g. "niri", "dms", "kde", "gnome").
-                桌面环境标识符（如 "niri"、"dms"、"kde"、"gnome"）。
-
-        Returns:
-            True if all packages installed successfully, False otherwise.
-            所有软件包安装成功返回 True，否则返回 False。
-        """
         print_info(t("msg.shorin_ubuntu_mode"))
 
         # Add third-party PPAs required for desktop environment packages /
@@ -183,25 +185,26 @@ class ShorinSetup(Tool):
 
         return True
 
+    # Run adapted desktop environment setup for Fedora.
+    #
+    # 为 Fedora 运行适配后的桌面环境安装。
+    #
+    # Uses Fedora's dnf package manager and package groups to install
+    # desktop environments equivalent to the Arch-based shorin scripts.
+    #
+    # 使用 Fedora 的 dnf 包管理器和软件包组来安装与 Arch 版 shorin
+    # 脚本等效的桌面环境。
+    #
+    # Args:
+    #     option_key: The desktop environment identifier (e.g. "niri", "dms", "kde", "gnome").
+    #     桌面环境标识符（如 "niri"、"dms"、"kde"、"gnome"）。
+    #
+    #
+    # Returns:
+    #     True if all packages installed successfully, False otherwise.
+    #     所有软件包安装成功返回 True，否则返回 False。
+
     def _run_fedora_setup(self, option_key: str) -> bool:
-        """Run adapted desktop environment setup for Fedora.
-
-        为 Fedora 运行适配后的桌面环境安装。
-
-        Uses Fedora's dnf package manager and package groups to install
-        desktop environments equivalent to the Arch-based shorin scripts.
-
-        使用 Fedora 的 dnf 包管理器和软件包组来安装与 Arch 版 shorin
-        脚本等效的桌面环境。
-
-        Args:
-            option_key: The desktop environment identifier (e.g. "niri", "dms", "kde", "gnome").
-                桌面环境标识符（如 "niri"、"dms"、"kde"、"gnome"）。
-
-        Returns:
-            True if all packages installed successfully, False otherwise.
-            所有软件包安装成功返回 True，否则返回 False。
-        """
         print_info(t("msg.shorin_fedora_mode"))
 
         # Map option key to the corresponding Fedora package list /
@@ -228,25 +231,26 @@ class ShorinSetup(Tool):
 
         return True
 
+    # Run adapted desktop environment setup for openSUSE.
+    #
+    # 为 openSUSE 运行适配后的桌面环境安装。
+    #
+    # Uses openSUSE's zypper package manager and software patterns to install
+    # desktop environments. Note that Niri and DMS are not available on openSUSE.
+    #
+    # 使用 openSUSE 的 zypper 包管理器和软件模式来安装桌面环境。
+    # 注意 Niri 和 DMS 在 openSUSE 上不可用。
+    #
+    # Args:
+    #     option_key: The desktop environment identifier (e.g. "niri", "dms", "kde", "gnome").
+    #     桌面环境标识符（如 "niri"、"dms"、"kde"、"gnome"）。
+    #
+    #
+    # Returns:
+    #     True if all packages installed successfully, False if unsupported or failed.
+    #     所有软件包安装成功返回 True，不支持或失败返回 False。
+
     def _run_suse_setup(self, option_key: str) -> bool:
-        """Run adapted desktop environment setup for openSUSE.
-
-        为 openSUSE 运行适配后的桌面环境安装。
-
-        Uses openSUSE's zypper package manager and software patterns to install
-        desktop environments. Note that Niri and DMS are not available on openSUSE.
-
-        使用 openSUSE 的 zypper 包管理器和软件模式来安装桌面环境。
-        注意 Niri 和 DMS 在 openSUSE 上不可用。
-
-        Args:
-            option_key: The desktop environment identifier (e.g. "niri", "dms", "kde", "gnome").
-                桌面环境标识符（如 "niri"、"dms"、"kde"、"gnome"）。
-
-        Returns:
-            True if all packages installed successfully, False if unsupported or failed.
-            所有软件包安装成功返回 True，不支持或失败返回 False。
-        """
         print_info(t("msg.shorin_suse_mode"))
 
         # Map option key to the corresponding openSUSE package list;
@@ -276,22 +280,22 @@ class ShorinSetup(Tool):
 
         return True
 
+    # Main entry point: prompt user to select a desktop environment and install it.
+    #
+    # 主入口：提示用户选择桌面环境并进行安装。
+    #
+    # Detects the current Linux distribution, presents available desktop
+    # environment options, confirms the external repository usage with the
+    # user, then dispatches to the appropriate distro-specific setup method.
+    #
+    # 检测当前 Linux 发行版，展示可用的桌面环境选项，向用户确认
+    # 使用外部仓库，然后分派到相应的发行版专属安装方法。
+    #
+    # Returns:
+    #     True if setup completed successfully, False on error, None if user cancelled.
+    #     安装成功返回 True，出错返回 False，用户取消返回 None。
+
     def run(self) -> bool | None:
-        """Main entry point: prompt user to select a desktop environment and install it.
-
-        主入口：提示用户选择桌面环境并进行安装。
-
-        Detects the current Linux distribution, presents available desktop
-        environment options, confirms the external repository usage with the
-        user, then dispatches to the appropriate distro-specific setup method.
-
-        检测当前 Linux 发行版，展示可用的桌面环境选项，向用户确认
-        使用外部仓库，然后分派到相应的发行版专属安装方法。
-
-        Returns:
-            True if setup completed successfully, False on error, None if user cancelled.
-            安装成功返回 True，出错返回 False，用户取消返回 None。
-        """
         # Detect current distribution to choose the right setup strategy /
         # 检测当前发行版以选择正确的安装策略
         distro = detect_distro()

@@ -11,8 +11,8 @@ PROJECT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
 
+# Test sudo-aware file helper behavior
 class TestSudoUtils(TestCase):
-    """Test sudo-aware file helper behavior."""
 
     def test_need_sudo_uses_parent_for_missing_path(self):
         from utils.sudo_utils import need_sudo

@@ -9,28 +9,29 @@ Reads /etc/os-release to determine the distro family.
 通过读取 /etc/os-release 来确定发行版系列。
 """
 
+import functools
 from pathlib import Path
 
 from utils.platform import detect_platform
 
 
+# Detect the current distribution or platform.
+#
+# 检测当前发行版或平台。
+#
+# Reads /etc/os-release on Linux to map the running system to one
+# of the supported distro families. On Windows/macOS, returns the
+# platform name directly.
+#
+# 在 Linux 上读取 /etc/os-release，将运行系统映射到支持的发行版系列。
+# 在 Windows/macOS 上直接返回平台名称。
+#
+# Returns:
+#     Linux: "arch", "debian", "fedora", "suse", "unknown"
+#     Windows: "windows"
+#     macOS: "macos"
+@functools.lru_cache(maxsize=1)
 def detect_distro() -> str:
-    """Detect the current distribution or platform.
-
-    检测当前发行版或平台。
-
-    Reads /etc/os-release on Linux to map the running system to one
-    of the supported distro families. On Windows/macOS, returns the
-    platform name directly.
-
-    在 Linux 上读取 /etc/os-release，将运行系统映射到支持的发行版系列。
-    在 Windows/macOS 上直接返回平台名称。
-
-    Returns:
-        Linux: "arch", "debian", "fedora", "suse", "unknown"
-        Windows: "windows"
-        macOS: "macos"
-    """
     platform = detect_platform()
 
     # Non-Linux platforms return their name directly / 非 Linux 平台直接返回名称

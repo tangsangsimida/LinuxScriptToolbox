@@ -121,21 +121,20 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     },
 }
 
+# Register additional translations for a language.
+#
+# 为指定语言注册额外的翻译。
+#
+# Called by per-tool translation modules at import time to populate
+# tool-specific translations into the global TRANSLATIONS dict.
+#
+# 由各工具的翻译模块在导入时调用，将工具特定的翻译填充到全局
+# TRANSLATIONS 字典中。
+#
+# Args:
+#     lang: Two-letter language code (e.g. "en", "zh") / 两位语言代码（如 "en"、"zh"）
+#     translations: Mapping of translation keys to text / 翻译键到文本的映射
 def register_translations(lang: str, translations: dict[str, str]) -> None:
-    """Register additional translations for a language.
-
-    为指定语言注册额外的翻译。
-
-    Called by per-tool translation modules at import time to populate
-    tool-specific translations into the global TRANSLATIONS dict.
-
-    由各工具的翻译模块在导入时调用，将工具特定的翻译填充到全局
-    TRANSLATIONS 字典中。
-
-    Args:
-        lang: Two-letter language code (e.g. "en", "zh") / 两位语言代码（如 "en"、"zh"）
-        translations: Mapping of translation keys to text / 翻译键到文本的映射
-    """
     if lang not in TRANSLATIONS:
         TRANSLATIONS[lang] = {}
     TRANSLATIONS[lang].update(translations)
@@ -145,40 +144,37 @@ def register_translations(lang: str, translations: dict[str, str]) -> None:
 _current_lang: str | None = None
 
 
+# Load the project config file and return its contents as a dict.
+#
+# 加载项目配置文件并以字典形式返回其内容。
+#
+# Returns:
+#     dict: Parsed config dict, or empty dict if the file does not exist.
+#     解析后的配置字典，如果文件不存在则返回空字典。
 def _load_config() -> dict:
-    """Load the project config file and return its contents as a dict.
-
-    加载项目配置文件并以字典形式返回其内容。
-
-    Returns:
-        dict: Parsed config dict, or empty dict if the file does not exist.
-        解析后的配置字典，如果文件不存在则返回空字典。
-    """
     if CONFIG_PATH.exists():
         return json.loads(CONFIG_PATH.read_text())
     return {}
 
 
+# Save the given config dict to the project config file as pretty-printed JSON.
+#
+# 将给定的配置字典以格式化 JSON 的形式保存到项目配置文件。
+#
+# Args:
+#     cfg: Config dict to save. / 要保存的配置字典。
 def _save_config(cfg: dict) -> None:
-    """Save the given config dict to the project config file as pretty-printed JSON.
-
-    将给定的配置字典以格式化 JSON 的形式保存到项目配置文件。
-
-    Args:
-        cfg: Config dict to save. / 要保存的配置字典。
-    """
     CONFIG_PATH.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
 
 
+# Get the current language code, loading from config on first call.
+#
+# 获取当前语言代码，首次调用时从配置文件加载。
+#
+# Returns:
+#     str: Two-letter language code (e.g. "en", "zh").
+#     两位语言代码（如 "en"、"zh"）。
 def get_lang() -> str:
-    """Get the current language code, loading from config on first call.
-
-    获取当前语言代码，首次调用时从配置文件加载。
-
-    Returns:
-        str: Two-letter language code (e.g. "en", "zh").
-        两位语言代码（如 "en"、"zh"）。
-    """
     global _current_lang
     # Lazy-load: only read config on the first call to avoid repeated file I/O / 延迟加载：仅在首次调用时读取配置，避免重复文件 I/O
     if _current_lang is None:
@@ -187,14 +183,13 @@ def get_lang() -> str:
     return _current_lang
 
 
+# Set the current language and persist the choice to config.json.
+#
+# 设置当前语言并将选择持久化到 config.json。
+#
+# Args:
+#     lang: Two-letter language code (e.g. "en", "zh"). / 两位语言代码（如 "en"、"zh"）。
 def set_lang(lang: str) -> None:
-    """Set the current language and persist the choice to config.json.
-
-    设置当前语言并将选择持久化到 config.json。
-
-    Args:
-        lang: Two-letter language code (e.g. "en", "zh"). / 两位语言代码（如 "en"、"zh"）。
-    """
     global _current_lang
     _current_lang = lang
     cfg = _load_config()
@@ -202,27 +197,26 @@ def set_lang(lang: str) -> None:
     _save_config(cfg)
 
 
+# Look up a translation key in the current language.
+#
+# 在当前语言中查找翻译键。
+#
+# Falls back to English if the key is missing in the current language,
+# and to the raw key itself if it is missing in English as well.
+#
+# 如果当前语言缺少该键，则回退到英语；
+# 如果英语中也缺少该键，则返回原始键名。
+#
+# Args:
+#     key: Translation key following the naming conventions above.
+#          翻译键，遵循上述命名规范。
+#     **kwargs: Optional format arguments for str.format() interpolation.
+#               可选的 str.format() 格式化参数。
+#
+# Returns:
+#     str: Translated (and optionally formatted) string.
+#     翻译后的（可选格式化的）字符串。
 def t(key: str, **kwargs) -> str:
-    """Look up a translation key in the current language.
-
-    在当前语言中查找翻译键。
-
-    Falls back to English if the key is missing in the current language,
-    and to the raw key itself if it is missing in English as well.
-
-    如果当前语言缺少该键，则回退到英语；
-    如果英语中也缺少该键，则返回原始键名。
-
-    Args:
-        key: Translation key following the naming conventions above.
-             翻译键，遵循上述命名规范。
-        **kwargs: Optional format arguments for str.format() interpolation.
-                  可选的 str.format() 格式化参数。
-
-    Returns:
-        str: Translated (and optionally formatted) string.
-        翻译后的（可选格式化的）字符串。
-    """
     lang = get_lang()
     text = TRANSLATIONS.get(lang, TRANSLATIONS["en"]).get(key)
     if text is None:
@@ -233,37 +227,37 @@ def t(key: str, **kwargs) -> str:
     return text
 
 
+# Get the localized display name for a tool.
+#
+# 获取工具的本地化显示名称。
+#
+# Args:
+#     tool: Tool object with `name` and `display_name` attributes.
+#           具有 `name` 和 `display_name` 属性的工具对象。
+#
+# Returns:
+#     str: Localized display name if a translation exists, otherwise the
+#          tool's own display_name attribute.
+#
+#     如果存在翻译则返回本地化显示名称，否则返回工具自身的 display_name 属性。
 def tool_display_name(tool) -> str:
-    """Get the localized display name for a tool.
-
-    获取工具的本地化显示名称。
-
-    Args:
-        tool: Tool object with `name` and `display_name` attributes.
-              具有 `name` 和 `display_name` 属性的工具对象。
-
-    Returns:
-        str: Localized display name if a translation exists, otherwise the
-             tool's own display_name attribute.
-        如果存在翻译则返回本地化显示名称，否则返回工具自身的 display_name 属性。
-    """
     key = f"tool.{tool.name}.display_name"
     return t(key) if TRANSLATIONS["en"].get(key) else tool.display_name
 
 
+# Get the localized description for a tool.
+#
+# 获取工具的本地化描述。
+#
+# Args:
+#     tool: Tool object with `name` and `description` attributes.
+#           具有 `name` 和 `description` 属性的工具对象。
+#
+# Returns:
+#     str: Localized description if a translation exists, otherwise the
+#          tool's own description attribute.
+#
+#     如果存在翻译则返回本地化描述，否则返回工具自身的 description 属性。
 def tool_description(tool) -> str:
-    """Get the localized description for a tool.
-
-    获取工具的本地化描述。
-
-    Args:
-        tool: Tool object with `name` and `description` attributes.
-              具有 `name` 和 `description` 属性的工具对象。
-
-    Returns:
-        str: Localized description if a translation exists, otherwise the
-             tool's own description attribute.
-        如果存在翻译则返回本地化描述，否则返回工具自身的 description 属性。
-    """
     key = f"tool.{tool.name}.description"
     return t(key) if TRANSLATIONS["en"].get(key) else tool.description

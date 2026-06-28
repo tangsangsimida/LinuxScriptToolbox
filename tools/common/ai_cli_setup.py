@@ -59,38 +59,38 @@ DISTRO_NODEJS_PKGS = {  # Node.js package names mapped by distro family / 按发
 }
 
 
-def _has_nodejs() -> bool:
-    """Check if Node.js is installed.
+# Check if Node.js is installed.
+#
+# 检查 Node.js 是否已安装。
 
-    检查 Node.js 是否已安装。
-    """
+def _has_nodejs() -> bool:
     return command_exists("node")
 
 
-def _has_npm() -> bool:
-    """Check if npm is installed.
+# Check if npm is installed.
+#
+# 检查 npm 是否已安装。
 
-    检查 npm 是否已安装。
-    """
+def _has_npm() -> bool:
     return command_exists("npm")
 
 
-def _get_node_version() -> str | None:
-    """Get installed Node.js version string.
+# Get installed Node.js version string.
+#
+# 获取已安装的 Node.js 版本字符串。
 
-    获取已安装的 Node.js 版本字符串。
-    """
+def _get_node_version() -> str | None:
     code, out = run_cmd(["node", "--version"])  # Run `node --version` / 执行 `node --version`
     if code == 0:
         return out  # Return version string like "v20.11.1" / 返回类似 "v20.11.1" 的版本字符串
     return None  # Node.js not found / 未找到 Node.js
 
 
-def _parse_node_major(version: str | None) -> int | None:
-    """Parse a Node.js major version from strings like 'v20.11.1'.
+# Parse a Node.js major version from strings like 'v20.11.1'.
+#
+# 从类似 'v20.11.1' 的字符串中解析 Node.js 主版本号。
 
-    从类似 'v20.11.1' 的字符串中解析 Node.js 主版本号。
-    """
+def _parse_node_major(version: str | None) -> int | None:
     if not version:
         return None
 
@@ -101,20 +101,20 @@ def _parse_node_major(version: str | None) -> int | None:
     return int(major)
 
 
-def _is_node_version_supported(version: str | None) -> bool:
-    """Return True when Node.js satisfies the minimum supported version.
+# Return True when Node.js satisfies the minimum supported version.
+#
+# 当 Node.js 版本满足最低支持版本要求时返回 True。
 
-    当 Node.js 版本满足最低支持版本要求时返回 True。
-    """
+def _is_node_version_supported(version: str | None) -> bool:
     major = _parse_node_major(version)  # Parse major version number / 解析主版本号
     return major is not None and major >= MIN_NODE_MAJOR  # Check against minimum / 与最低版本要求比较
 
 
-def _install_nodejs(distro: str) -> bool:
-    """Install Node.js and npm via the distro package manager.
+# Install Node.js and npm via the distro package manager.
+#
+# 通过发行版包管理器安装 Node.js 和 npm。
 
-    通过发行版包管理器安装 Node.js 和 npm。
-    """
+def _install_nodejs(distro: str) -> bool:
     print_info(t("msg.ai_cli_nodejs_installing"))
 
     # Windows: use winget or chocolatey / Windows：使用 winget 或 chocolatey
@@ -164,20 +164,20 @@ def _install_nodejs(distro: str) -> bool:
     return True
 
 
-def _is_npm_package_installed(package: str) -> bool:
-    """Check if an npm package is globally installed.
+# Check if an npm package is globally installed.
+#
+# 检查指定的 npm 包是否已全局安装。
 
-    检查指定的 npm 包是否已全局安装。
-    """
+def _is_npm_package_installed(package: str) -> bool:
     code, out = run_cmd(["npm", "list", "-g", package])  # Query global packages / 查询全局包
     return code == 0 and package in out  # Found if command succeeds and package in output / 命令成功且输出中包含该包即为已安装
 
 
-def _install_npm_package(package: str, display_name: str) -> bool:
-    """Install an npm package globally.
+# Install an npm package globally.
+#
+# 全局安装指定的 npm 包。
 
-    全局安装指定的 npm 包。
-    """
+def _install_npm_package(package: str, display_name: str) -> bool:
     if _is_npm_package_installed(package):  # Skip if already installed / 如果已安装则跳过
         print_info(t("msg.ai_cli_already_installed", name=display_name))
         return True
@@ -192,11 +192,11 @@ def _install_npm_package(package: str, display_name: str) -> bool:
     return True
 
 
-def _update_npm_package(package: str, display_name: str) -> bool:
-    """Update a globally installed npm package to latest version.
+# Update a globally installed npm package to latest version.
+#
+# 将全局安装的 npm 包更新到最新版本。
 
-    将全局安装的 npm 包更新到最新版本。
-    """
+def _update_npm_package(package: str, display_name: str) -> bool:
     if not _is_npm_package_installed(package):  # Cannot update what is not installed / 未安装则无法更新
         print_info(t("msg.ai_cli_not_installed", name=display_name))
         return False
@@ -211,11 +211,11 @@ def _update_npm_package(package: str, display_name: str) -> bool:
     return True
 
 
-def _get_installed_clis() -> list[dict]:
-    """Return list of AI CLI options that are currently installed.
+# Return list of AI CLI options that are currently installed.
+#
+# 返回当前已安装的 AI CLI 工具列表。
 
-    返回当前已安装的 AI CLI 工具列表。
-    """
+def _get_installed_clis() -> list[dict]:
     installed = []
     for opt in AI_CLI_OPTIONS:
         if opt["id"] == "all":
@@ -225,11 +225,11 @@ def _get_installed_clis() -> list[dict]:
     return installed
 
 
-def update_installed_ai_clis() -> bool | None:
-    """Update every installed AI CLI package from the shared npm package list.
+# Update every installed AI CLI package from the shared npm package list.
+#
+# 更新所有已安装的 AI CLI 包到最新版本。
 
-    更新所有已安装的 AI CLI 包到最新版本。
-    """
+def update_installed_ai_clis() -> bool | None:
     if not _has_npm():
         print_error(t("msg.ai_cli_npm_not_found"))
         return False
@@ -275,11 +275,11 @@ class AiCliSetup(Tool):
     requires_network = True  # Needs internet access / 需要网络连接
     requires_sudo = True  # Needs root privileges / 需要管理员权限
 
-    def _ensure_nodejs(self, distro: str) -> bool:
-        """Ensure Node.js and npm are available. Returns False on failure.
+    # Ensure Node.js and npm are available. Returns False on failure.
+    #
+    # 确保 Node.js 和 npm 可用。失败时返回 False。
 
-        确保 Node.js 和 npm 可用。失败时返回 False。
-        """
+    def _ensure_nodejs(self, distro: str) -> bool:
         if not _has_nodejs():
             print_info(t("msg.ai_cli_nodejs_not_found"))
             if not _install_nodejs(distro):
@@ -304,11 +304,11 @@ class AiCliSetup(Tool):
 
         return True
 
-    def _run_install(self) -> bool | None:
-        """Install flow: let user pick a CLI to install.
+    # Install flow: let user pick a CLI to install.
+    #
+    # 安装流程：让用户选择要安装的 CLI 工具。
 
-        安装流程：让用户选择要安装的 CLI 工具。
-        """
+    def _run_install(self) -> bool | None:
         choice = prompt_selection(t("msg.ai_cli_select"), AI_CLI_OPTIONS)
 
         if choice is None or choice == BACK_ACTION:
@@ -334,11 +334,11 @@ class AiCliSetup(Tool):
         display_name = t(selected["name_key"])
         return _install_npm_package(selected["package"], display_name)
 
-    def _run_update(self) -> bool | None:
-        """Update flow: let user pick an installed CLI to update.
+    # Update flow: let user pick an installed CLI to update.
+    #
+    # 更新流程：让用户选择已安装的 CLI 工具进行更新。
 
-        更新流程：让用户选择已安装的 CLI 工具进行更新。
-        """
+    def _run_update(self) -> bool | None:
         installed = _get_installed_clis()
         if not installed:
             print_info(t("msg.ai_cli_none_installed"))
@@ -377,11 +377,11 @@ class AiCliSetup(Tool):
         display_name = t(selected["name_key"])
         return _update_npm_package(selected["package"], display_name)
 
-    def run(self) -> bool | None:
-        """Main entry point: ensure dependencies, then show install/update menu.
+    # Main entry point: ensure dependencies, then show install/update menu.
+    #
+    # 主入口：确保依赖项就绪，然后显示安装/更新菜单。
 
-        主入口：确保依赖项就绪，然后显示安装/更新菜单。
-        """
+    def run(self) -> bool | None:
         distro = detect_distro()  # Detect Linux distribution / 检测 Linux 发行版
 
         if not self._ensure_nodejs(distro):

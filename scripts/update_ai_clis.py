@@ -20,28 +20,26 @@ ensure_venv(PROJECT_DIR)
 from tools.common.ai_cli_setup import update_installed_ai_clis  # noqa: E402
 
 
+# Parse command-line arguments.
+#
+# 解析命令行参数。
+#
+# Returns:
+#     The parsed argument namespace / 解析后的参数命名空间
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments.
-
-    解析命令行参数。
-
-    Returns:
-        The parsed argument namespace. / 解析后的参数命名空间。
-    """
     parser = argparse.ArgumentParser(
         description="Update installed npm-based AI CLI tools from LinuxScriptToolbox."
     )
     return parser.parse_args()
 
 
+# Entry point for the AI CLI update script.
+#
+# AI CLI 更新脚本的入口函数。
+#
+# Returns:
+#     0 on success, 1 on failure / 成功返回 0，失败返回 1
 def main() -> int:
-    """Entry point for the AI CLI update script.
-
-    AI CLI 更新脚本的入口函数。
-
-    Returns:
-        0 on success, 1 on failure. / 成功返回 0，失败返回 1。
-    """
     parse_args()
     result = update_installed_ai_clis()
     # Return 0 if update succeeded (True) or no updates needed (None) / 更新成功(True)或无需更新(None)时返回 0

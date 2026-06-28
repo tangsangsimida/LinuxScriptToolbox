@@ -18,12 +18,12 @@ PROJECT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
 
+# Test run_cmd() function
 class TestRunCmd(TestCase):
-    """Test run_cmd() function."""
 
+    # Test successful command execution
     @patch("utils.cmd_utils.subprocess.run")
     def test_successful_command(self, mock_run):
-        """Test successful command execution."""
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_result.stdout = "hello world\n"
@@ -41,9 +41,9 @@ class TestRunCmd(TestCase):
             timeout=300
         )
 
+    # Test failed command execution
     @patch("utils.cmd_utils.subprocess.run")
     def test_failed_command(self, mock_run):
-        """Test failed command execution."""
         mock_result = MagicMock()
         mock_result.returncode = 1
         mock_result.stdout = ""
@@ -55,9 +55,9 @@ class TestRunCmd(TestCase):
         self.assertEqual(code, 1)
         self.assertEqual(output, "")
 
+    # Test command timeout handling
     @patch("utils.cmd_utils.subprocess.run")
     def test_command_timeout(self, mock_run):
-        """Test command timeout handling."""
         mock_run.side_effect = subprocess.TimeoutExpired(cmd="sleep 100", timeout=10)
 
         from utils.cmd_utils import run_cmd, TIMEOUT_EXIT_CODE
@@ -66,9 +66,9 @@ class TestRunCmd(TestCase):
         self.assertEqual(code, TIMEOUT_EXIT_CODE)
         self.assertEqual(output, "")
 
+    # Test custom timeout parameter
     @patch("utils.cmd_utils.subprocess.run")
     def test_custom_timeout(self, mock_run):
-        """Test custom timeout parameter."""
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_result.stdout = "ok"
@@ -84,9 +84,9 @@ class TestRunCmd(TestCase):
             timeout=60
         )
 
+    # Test that stdout is stripped of whitespace
     @patch("utils.cmd_utils.subprocess.run")
     def test_stdout_stripped(self, mock_run):
-        """Test that stdout is stripped of whitespace."""
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_result.stdout = "  hello  \n"
@@ -97,10 +97,10 @@ class TestRunCmd(TestCase):
 
         self.assertEqual(output, "hello")
 
+    # Test non-interactive sudo password injection for captured commands
     @patch.dict("os.environ", {"LST_SUDO_PASSWORD": "secret"})
     @patch("utils.cmd_utils.subprocess.run")
     def test_sudo_command_uses_password_from_env(self, mock_run):
-        """Test non-interactive sudo password injection for captured commands."""
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_result.stdout = "ok"
@@ -120,12 +120,12 @@ class TestRunCmd(TestCase):
         )
 
 
+# Test run_verbose() function
 class TestRunVerbose(TestCase):
-    """Test run_verbose() function."""
 
+    # Test successful command execution
     @patch("utils.cmd_utils.subprocess.run")
     def test_successful_command(self, mock_run):
-        """Test successful command execution."""
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_run.return_value = mock_result
@@ -136,9 +136,9 @@ class TestRunVerbose(TestCase):
         self.assertEqual(code, 0)
         mock_run.assert_called_once_with(["echo", "hello"], timeout=300)
 
+    # Test failed command execution
     @patch("utils.cmd_utils.subprocess.run")
     def test_failed_command(self, mock_run):
-        """Test failed command execution."""
         mock_result = MagicMock()
         mock_result.returncode = 1
         mock_run.return_value = mock_result
@@ -148,9 +148,9 @@ class TestRunVerbose(TestCase):
 
         self.assertEqual(code, 1)
 
+    # Test command timeout handling
     @patch("utils.cmd_utils.subprocess.run")
     def test_command_timeout(self, mock_run):
-        """Test command timeout handling."""
         mock_run.side_effect = subprocess.TimeoutExpired(cmd="sleep 100", timeout=10)
 
         from utils.cmd_utils import run_verbose, TIMEOUT_EXIT_CODE
@@ -158,9 +158,9 @@ class TestRunVerbose(TestCase):
 
         self.assertEqual(code, TIMEOUT_EXIT_CODE)
 
+    # Test custom timeout parameter
     @patch("utils.cmd_utils.subprocess.run")
     def test_custom_timeout(self, mock_run):
-        """Test custom timeout parameter."""
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_run.return_value = mock_result
@@ -170,10 +170,10 @@ class TestRunVerbose(TestCase):
 
         mock_run.assert_called_once_with(["echo", "ok"], timeout=60)
 
+    # Test non-interactive sudo password injection for verbose commands
     @patch.dict("os.environ", {"LST_SUDO_PASSWORD": "secret"})
     @patch("utils.cmd_utils.subprocess.run")
     def test_sudo_verbose_uses_password_from_env(self, mock_run):
-        """Test non-interactive sudo password injection for verbose commands."""
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_run.return_value = mock_result
@@ -190,22 +190,22 @@ class TestRunVerbose(TestCase):
         )
 
 
+# Test module constants
 class TestConstants(TestCase):
-    """Test module constants."""
 
+    # Test default timeout value
     def test_default_timeout(self):
-        """Test default timeout value."""
         from utils.cmd_utils import DEFAULT_TIMEOUT
         self.assertEqual(DEFAULT_TIMEOUT, 300)
 
+    # Test timeout exit code value
     def test_timeout_exit_code(self):
-        """Test timeout exit code value."""
         from utils.cmd_utils import TIMEOUT_EXIT_CODE
         self.assertEqual(TIMEOUT_EXIT_CODE, 124)
 
 
+# Standalone test runner
 def run_tests():
-    """Standalone test runner."""
     print("Running cmd_utils unit tests...")
     print("=" * 60)
     unittest_main(module=__name__, exit=False, verbosity=2)
