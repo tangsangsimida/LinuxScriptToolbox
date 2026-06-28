@@ -13,8 +13,10 @@ home and office machines through the DERP relay.
 from tools.base import Tool
 from . import tailscale_client_translations  # noqa: F401 - side-effect import for i18n registration
 from utils.cmd_utils import run_cmd, run_verbose
+from utils.distro import detect_distro
 from utils.i18n import t
 from utils.platform import IS_WINDOWS, command_exists
+from utils.sudo_utils import write_file as sudo_write_file
 from utils.ui import (
     ask,
     print_success,
@@ -81,11 +83,15 @@ def _get_derp_info() -> dict | None:
             "-servername", host.strip(),
         ], timeout=10)
         if code == 0:
-            # Extract SHA256 fingerprint / 提取 SHA256 指纹
-            code2, fp_out = run_cmd([
-                "bash", "-c",
-                f"echo '{out}' | openssl x509 -fingerprint -sha256 -noout 2>/dev/null",
-            ])
+            # Extract SHA256 fingerprint via stdin to avoid shell injection /
+            # 通过 stdin 提取 SHA256 指纹以避免 shell 注入
+            import subprocess
+            result = subprocess.run(
+                ["openssl", "x509", "-fingerprint", "-sha256", "-noout"],
+                input=out, capture_output=True, text=True, timeout=10,
+            )
+            code2 = result.returncode
+            fp_out = result.stdout.strip()
             if code2 == 0 and "SHA256 Fingerprint" in fp_out:
                 # Convert colon-separated hex to raw format /
                 # 将冒号分隔的十六进制转换为 raw 格式
@@ -119,7 +125,11 @@ def _get_derp_info() -> dict | None:
 #
 # Returns:
 #     DERPMap JSON string. / DERPMap JSON 字符串。
-def _generate_derpmap_json(derp_info: dict) -> str:
+def _build_derpmap(derp_info: dict) -> dict:
+    """Generate DERPMap structure as a dict.
+
+    生成 DERPMap 结构（字典格式）。
+    """
     node = {
         "Name": "1",
         "RegionID": 900,
@@ -131,7 +141,7 @@ def _generate_derpmap_json(derp_info: dict) -> str:
     if derp_info["cert_name"]:
         node["CertName"] = derp_info["cert_name"]
 
-    derpmap = {
+    return {
         "Regions": {
             "900": {
                 "RegionID": 900,
@@ -141,9 +151,6 @@ def _generate_derpmap_json(derp_info: dict) -> str:
             }
         }
     }
-
-    import json
-    return json.dumps(derpmap, indent=2)
 
 
 # Generate the full ACL JSON snippet with DERPMap.
@@ -156,7 +163,9 @@ def _generate_derpmap_json(derp_info: dict) -> str:
 # Returns:
 #     ACL JSON string with derpMap field. / 包含 derpMap 字段的 ACL JSON 字符串。
 def _generate_acl_snippet(derp_info: dict) -> str:
-    derpmap_json = _generate_derpmap_json(derp_info)
+    import json
+    derpmap = _build_derpmap(derp_info)
+    derpmap_json = json.dumps(derpmap, indent=2)
     return f'''
 // === Add this to your Tailscale ACL (https://login.tailscale.com/admin/acls/file) ===
 // === 将以下内容添加到 Tailscale ACL 配置中 ===
@@ -243,9 +252,7 @@ def _push_acl() -> bool:
     except json.JSONDecodeError:
         acl = {}
 
-    derpmap_json = _generate_derpmap_json(derp_info)
-    derpmap = json.loads(derpmap_json)
-    acl["derpMap"] = derpmap
+    acl["derpMap"] = _build_derpmap(derp_info)
 
     # Write to temp file and push / 写入临时文件并推送
     import tempfile
@@ -293,14 +300,163 @@ def _install_tailscale() -> bool:
     return _install_tailscale_linux()
 
 
-# Install Tailscale on Linux.
+# Install Tailscale on Linux using distro-specific package manager.
 #
-# 在 Linux 上安装 Tailscale。
+# 使用发行版原生包管理器安装 Tailscale。
+#
+# Supports: Arch, Debian/Ubuntu, Fedora/RHEL, openSUSE, Alpine, Gentoo.
+# Falls back to official install script if distro is not recognized.
+#
+# 支持：Arch、Debian/Ubuntu、Fedora/RHEL、openSUSE、Alpine、Gentoo。
+# 发行版未识别时回退到官方安装脚本。
 #
 # Returns:
 #     True if installation succeeded, False otherwise. / 安装成功返回 True，否则返回 False。
 def _install_tailscale_linux() -> bool:
-    # Use official install script / 使用官方安装脚本
+    distro = detect_distro()
+    print_info(t("msg.tc_detected_distro", distro=distro))
+
+    if distro == "arch":
+        return _install_tailscale_arch()
+    elif distro in ("debian", "ubuntu"):
+        return _install_tailscale_debian()
+    elif distro == "fedora":
+        return _install_tailscale_fedora()
+    elif distro == "suse":
+        return _install_tailscale_suse()
+    else:
+        return _install_tailscale_generic()
+
+
+# Install Tailscale on Arch Linux.
+#
+# 在 Arch Linux 上安装 Tailscale。
+#
+# Returns:
+#     True if installation succeeded, False otherwise. / 安装成功返回 True，否则返回 False。
+def _install_tailscale_arch() -> bool:
+    print_info(t("msg.tc_install_arch"))
+
+    # Install from official repos / 从官方仓库安装
+    code = run_verbose(["sudo", "pacman", "-S", "--noconfirm", "tailscale"])
+    if code != 0:
+        print_error(t("msg.tc_install_failed"))
+        return False
+
+    # Enable and start the service / 启用并启动服务
+    run_verbose(["sudo", "systemctl", "enable", "--now", "tailscaled"])
+
+    print_success(t("msg.tc_install_success"))
+    _prompt_start_tailscale()
+    return True
+
+
+# Install Tailscale on Debian/Ubuntu.
+#
+# 在 Debian/Ubuntu 上安装 Tailscale。
+#
+# Returns:
+#     True if installation succeeded, False otherwise. / 安装成功返回 True，否则返回 False。
+def _install_tailscale_debian() -> bool:
+    print_info(t("msg.tc_install_debian"))
+
+    # Add Tailscale GPG key / 添加 Tailscale GPG 密钥
+    print_info(t("msg.tc_adding_repo"))
+    run_verbose([
+        "curl", "-fsSL", "https://pkgs.tailscale.com/stable/debian/bookworm.noarmor.gpg",
+        "-o", "/tmp/tailscale-key.gpg",
+    ])
+    run_verbose(["sudo", "mv", "/tmp/tailscale-key.gpg",
+                 "/usr/share/keyrings/tailscale-archive-keyring.gpg"])
+
+    # Add Tailscale apt source / 添加 Tailscale apt 源
+    sudo_write_file(
+        "/etc/apt/sources.list.d/tailscale.list",
+        "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] "
+        "https://pkgs.tailscale.com/stable/debian bookworm main\n",
+    )
+
+    # Update and install / 更新并安装
+    run_verbose(["sudo", "apt-get", "update", "-qq"])
+    code = run_verbose(["sudo", "apt-get", "install", "-y", "tailscale"])
+    if code != 0:
+        print_error(t("msg.tc_install_failed"))
+        return False
+
+    print_success(t("msg.tc_install_success"))
+    _prompt_start_tailscale()
+    return True
+
+
+# Install Tailscale on Fedora/RHEL.
+#
+# 在 Fedora/RHEL 上安装 Tailscale。
+#
+# Returns:
+#     True if installation succeeded, False otherwise. / 安装成功返回 True，否则返回 False。
+def _install_tailscale_fedora() -> bool:
+    print_info(t("msg.tc_install_fedora"))
+
+    # Add Tailscale repo / 添加 Tailscale 仓库
+    print_info(t("msg.tc_adding_repo"))
+    code = run_verbose([
+        "sudo", "dnf", "config-manager", "--add-repo",
+        "https://pkgs.tailscale.com/stable/fedora/tailscale.repo",
+    ])
+    if code != 0:
+        # Fallback: download repo file manually / 回退：手动下载 repo 文件
+        run_verbose([
+            "curl", "-fsSL", "https://pkgs.tailscale.com/stable/fedora/tailscale.repo",
+            "-o", "/tmp/tailscale.repo",
+        ])
+        run_verbose(["sudo", "mv", "/tmp/tailscale.repo", "/etc/yum.repos.d/tailscale.repo"])
+
+    code = run_verbose(["sudo", "dnf", "install", "-y", "tailscale"])
+    if code != 0:
+        print_error(t("msg.tc_install_failed"))
+        return False
+
+    # Enable and start / 启用并启动
+    run_verbose(["sudo", "systemctl", "enable", "--now", "tailscaled"])
+
+    print_success(t("msg.tc_install_success"))
+    _prompt_start_tailscale()
+    return True
+
+
+# Install Tailscale on openSUSE.
+#
+# 在 openSUSE 上安装 Tailscale。
+#
+# Returns:
+#     True if installation succeeded, False otherwise. / 安装成功返回 True，否则返回 False。
+def _install_tailscale_suse() -> bool:
+    print_info(t("msg.tc_install_suse"))
+
+    # openSUSE Tailscale is available in the official repos /
+    # openSUSE 官方仓库中已有 Tailscale
+    code = run_verbose(["sudo", "zypper", "install", "-y", "tailscale"])
+    if code != 0:
+        print_warning(t("msg.tc_zypper_failed_fallback"))
+        return _install_tailscale_generic()
+
+    # Enable and start / 启用并启动
+    run_verbose(["sudo", "systemctl", "enable", "--now", "tailscaled"])
+
+    print_success(t("msg.tc_install_success"))
+    _prompt_start_tailscale()
+    return True
+
+
+# Install Tailscale using the official generic install script.
+#
+# 使用官方通用安装脚本安装 Tailscale（适用于未识别的发行版）。
+#
+# Returns:
+#     True if installation succeeded, False otherwise. / 安装成功返回 True，否则返回 False。
+def _install_tailscale_generic() -> bool:
+    print_info(t("msg.tc_install_generic"))
+
     code = run_verbose([
         "curl", "-fsSL", "https://tailscale.com/install.sh", "-o", "/tmp/tailscale-install.sh",
     ])
@@ -436,21 +592,10 @@ def _verify_derp() -> bool:
 def _show_guide() -> bool:
     console.print()
     console.print(t("msg.tc_guide_title"))
-    console.print()
-    console.print(t("msg.tc_guide_step1"))
-    console.print(t("msg.tc_guide_step1_detail"))
-    console.print()
-    console.print(t("msg.tc_guide_step2"))
-    console.print(t("msg.tc_guide_step2_detail"))
-    console.print()
-    console.print(t("msg.tc_guide_step3"))
-    console.print(t("msg.tc_guide_step3_detail"))
-    console.print()
-    console.print(t("msg.tc_guide_step4"))
-    console.print(t("msg.tc_guide_step4_detail"))
-    console.print()
-    console.print(t("msg.tc_guide_step5"))
-    console.print(t("msg.tc_guide_step5_detail"))
+    for i in range(1, 6):
+        console.print()
+        console.print(t(f"msg.tc_guide_step{i}"))
+        console.print(t(f"msg.tc_guide_step{i}_detail"))
     console.print()
     console.print(t("msg.tc_guide_ssh"))
     console.print()

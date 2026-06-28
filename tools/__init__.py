@@ -34,8 +34,13 @@ def _auto_import_translations(modname: str) -> None:
     trans_modname = f"{modname}_translations"
     try:
         importlib.import_module(trans_modname)
-    except ImportError:
-        pass  # No translations module for this tool / 此工具没有翻译模块
+    except ImportError as e:
+        # Only ignore "module not found"; re-raise syntax/import errors inside the module
+        # 只忽略"模块未找到"；模块内部的语法/导入错误需要重新抛出
+        if e.name and e.name.replace(".", "_") in trans_modname.replace(".", "_"):
+            pass  # Module doesn't exist / 模块不存在
+        else:
+            warnings.warn(f"Failed to import translations {trans_modname}: {e}")
 
 
 # Walk the tools/ package and instantiate every Tool subclass found.

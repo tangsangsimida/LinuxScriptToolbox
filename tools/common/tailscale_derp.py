@@ -11,7 +11,6 @@ Headscale control server for fully self-hosted Tailscale networks.
 实现完全自托管的 Tailscale 网络。
 """
 
-import os
 from pathlib import Path
 
 from tools.base import Tool
@@ -20,6 +19,7 @@ from utils.cmd_utils import run_cmd, run_verbose
 from utils.distro import detect_distro
 from utils.i18n import t
 from utils.platform import command_exists
+from utils.sudo_utils import write_file as sudo_write_file
 from utils.ui import (
     ask,
     print_success,
@@ -140,22 +140,6 @@ def _sudo_exists(path: Path) -> bool:
 #
 # 先写入临时文件，再用 sudo 移动到目标路径。
 # 避免使用 sudo tee 时 LST_SUDO_PASSWORD 被写入文件的问题。
-#
-# Args:
-#     path: Target file path. / 目标文件路径。
-#     content: File content to write. / 要写入的文件内容。
-def _sudo_write_file(path: str, content: str) -> None:
-    import tempfile
-    fd, tmp_path = tempfile.mkstemp(suffix=".tmp", prefix="lst_")
-    try:
-        with os.fdopen(fd, "w") as f:
-            f.write(content)
-        run_verbose(["sudo", "mv", tmp_path, path])
-    except Exception:
-        # Clean up temp file on error / 出错时清理临时文件
-        run_cmd(["rm", "-f", tmp_path])
-        raise
-
 
 # Check if a string is an IP address (IPv4 or IPv6).
 #
@@ -235,13 +219,9 @@ def _generate_self_signed_cert(hostname: str) -> tuple[str, str] | None:
 # Returns:
 #     True if the port is in use, False otherwise. / 端口被占用返回 True，否则返回 False。
 def _is_port_in_use(port: str, proto: str = "tcp") -> bool:
-    if proto == "tcp":
-        code, out = run_cmd(["ss", "-tlnp"])
-    else:
-        code, out = run_cmd(["ss", "-ulnp"])
-    if code != 0:
-        return False
-    return f":{port} " in out
+    cmd = ["ss", "-tlnp"] if proto == "tcp" else ["ss", "-ulnp"]
+    code, out = run_cmd(cmd)
+    return code == 0 and f":{port} " in out
 
 
 # Check if Docker and Docker Compose are available.
@@ -250,7 +230,17 @@ def _is_port_in_use(port: str, proto: str = "tcp") -> bool:
 #
 # Returns:
 #     Tuple of (docker_available, compose_available). / 返回 (docker 可用, compose 可用) 元组。
+_docker_check_cache: tuple[bool, bool] | None = None
+
+
 def _check_docker() -> tuple[bool, bool]:
+    """Check Docker and Docker Compose availability (cached per run).
+
+    检查 Docker 和 Docker Compose 可用性（每次运行缓存）。
+    """
+    global _docker_check_cache
+    if _docker_check_cache is not None:
+        return _docker_check_cache
     docker_ok = command_exists("docker")
     compose_ok = False
     if docker_ok:
@@ -260,7 +250,8 @@ def _check_docker() -> tuple[bool, bool]:
         if not compose_ok:
             # Standalone docker-compose / 独立的 docker-compose
             compose_ok = command_exists("docker-compose")
-    return docker_ok, compose_ok
+    _docker_check_cache = (docker_ok, compose_ok)
+    return _docker_check_cache
 
 
 # Collect DERP configuration from user input.
@@ -519,18 +510,9 @@ def _acquire_certbot_cert(hostname: str) -> tuple[str, str] | None:
     # Check if certbot is available / 检查 certbot 是否可用
     if not command_exists("certbot"):
         print_info(t("msg.derp_installing_certbot"))
+        from utils.platform_services import package_install
         distro = detect_distro()
-        if distro in ("debian", "ubuntu"):
-            code = run_verbose(["sudo", "apt-get", "install", "-y", "certbot"])
-        elif distro == "arch":
-            code = run_verbose(["sudo", "pacman", "-S", "--noconfirm", "certbot"])
-        elif distro == "fedora":
-            code = run_verbose(["sudo", "dnf", "install", "-y", "certbot"])
-        elif distro == "suse":
-            code = run_verbose(["sudo", "zypper", "install", "-y", "certbot"])
-        else:
-            print_error(t("msg.derp_certbot_unsupported"))
-            return None
+        code = package_install("certbot", distro)
         if code != 0:
             print_error(t("msg.derp_certbot_install_failed"))
             return None
@@ -599,33 +581,25 @@ def _install_tailscale(distro: str) -> bool:
 
     print_info(t("msg.derp_installing_tailscale"))
 
-    # Add Tailscale repository and install / 添加 Tailscale 仓库并安装
-    if distro == "arch":
-        # Arch: tailscale is in the official repos / Arch：tailscale 在官方仓库中
-        code = run_verbose(["sudo", "pacman", "-S", "--noconfirm", "tailscale"])
-    elif distro in ("debian", "ubuntu"):
-        # Debian/Ubuntu: add Tailscale apt repo / Debian/Ubuntu：添加 Tailscale apt 仓库
+    # Debian/Ubuntu: need to add Tailscale apt repo first /
+    # Debian/Ubuntu：需要先添加 Tailscale apt 仓库
+    if distro in ("debian", "ubuntu"):
+        from utils.sudo_utils import write_file as sudo_write_file
         run_verbose(["curl", "-fsSL", "https://pkgs.tailscale.com/stable/debian/bookworm.noarmor.gpg",
                      "-o", "/tmp/tailscale-key.gpg"])
         run_verbose(["sudo", "mv", "/tmp/tailscale-key.gpg",
                      "/usr/share/keyrings/tailscale-archive-keyring.gpg"])
-        # Write source list to /tmp first, then sudo mv (avoids sudo-tee stdin leak) /
-        # 先写到 /tmp，再 sudo mv（避免 sudo tee stdin 泄漏密码）
-        run_cmd(["bash", "-c",
-                 "echo 'deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] "
-                 "https://pkgs.tailscale.com/stable/debian bookworm main' > /tmp/tailscale.list"])
-        run_verbose(["sudo", "mv", "/tmp/tailscale.list",
-                     "/etc/apt/sources.list.d/tailscale.list"])
+        sudo_write_file(
+            "/etc/apt/sources.list.d/tailscale.list",
+            "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] "
+            "https://pkgs.tailscale.com/stable/debian bookworm main\n",
+        )
         run_verbose(["sudo", "apt-get", "update", "-qq"])
-        code = run_verbose(["sudo", "apt-get", "install", "-y", "tailscale"])
-    elif distro == "fedora":
-        code = run_verbose(["sudo", "dnf", "install", "-y", "tailscale"])
-    elif distro == "suse":
-        code = run_verbose(["sudo", "zypper", "install", "-y", "tailscale"])
-    else:
-        print_error(t("msg.derp_tailscale_unsupported"))
-        return False
 
+    # Install via platform_services (handles arch/debian/fedora/suse)
+    # 通过 platform_services 安装（处理 arch/debian/fedora/suse）
+    from utils.platform_services import package_install
+    code = package_install("tailscale", distro)
     if code != 0:
         print_error(t("msg.derp_tailscale_install_failed"))
         return False
@@ -689,12 +663,12 @@ def _deploy_derp_docker(config: dict) -> bool:
 
     # Generate and write DERP config / 生成并写入 DERP 配置
     derp_yaml = _generate_derp_yaml(config)
-    _sudo_write_file(str(DERP_YAML_PATH), derp_yaml)
+    sudo_write_file(str(DERP_YAML_PATH), derp_yaml)
     print_success(t("msg.derp_config_written", path=str(DERP_YAML_PATH)))
 
     # Generate and write Docker Compose file / 生成并写入 Docker Compose 文件
     compose_yaml = _generate_compose_yaml(config)
-    _sudo_write_file(str(COMPOSE_FILE_PATH), compose_yaml)
+    sudo_write_file(str(COMPOSE_FILE_PATH), compose_yaml)
     print_success(t("msg.derp_compose_written", path=str(COMPOSE_FILE_PATH)))
 
     # Pull latest image / 拉取最新镜像
@@ -774,7 +748,7 @@ def _deploy_derp_systemd(config: dict) -> bool:
     # Generate systemd unit / 生成 systemd 服务单元
     unit_content = _generate_systemd_unit(config, DERP_SYSTEM_BINARY)
     unit_path = Path(f"/etc/systemd/system/{DERP_SERVICE_NAME}.service")
-    _sudo_write_file(str(unit_path), unit_content)
+    sudo_write_file(str(unit_path), unit_content)
     print_success(t("msg.derp_systemd_written", path=str(unit_path)))
 
     # Reload and start / 重新加载并启动
@@ -869,7 +843,7 @@ volumes:
     _sudo_mkdir(HEADSCALE_DATA_DIR / "config")
     _sudo_mkdir(HEADSCALE_DATA_DIR / "data")
 
-    _sudo_write_file(str(headscale_compose), compose_yaml)
+    sudo_write_file(str(headscale_compose), compose_yaml)
     print_success(t("msg.derp_headscale_compose_written", path=str(headscale_compose)))
 
     # Generate headscale config / 生成 headscale 配置
@@ -879,7 +853,7 @@ volumes:
 
     config_content = _generate_headscale_config(url_input.strip())
     config_path = HEADSCALE_DATA_DIR / "config" / "config.yaml"
-    _sudo_write_file(str(config_path), config_content)
+    sudo_write_file(str(config_path), config_content)
     print_success(t("msg.derp_headscale_config_written", path=str(config_path)))
 
     # Pull and start / 拉取并启动
@@ -930,13 +904,13 @@ def _deploy_headscale_systemd() -> bool:
     config_content = _generate_headscale_config(url_input.strip())
     config_path = HEADSCALE_DATA_DIR / "config.yaml"
     _sudo_mkdir(HEADSCALE_DATA_DIR)
-    _sudo_write_file(str(config_path), config_content)
+    sudo_write_file(str(config_path), config_content)
     print_success(t("msg.derp_headscale_config_written", path=str(config_path)))
 
     # Generate systemd unit / 生成 systemd 服务单元
     unit_content = _generate_headscale_systemd_unit(str(binary_path))
     unit_path = Path(f"/etc/systemd/system/{HEADSCALE_SERVICE_NAME}.service")
-    _sudo_write_file(str(unit_path), unit_content)
+    sudo_write_file(str(unit_path), unit_content)
     print_success(t("msg.derp_systemd_written", path=str(unit_path)))
 
     # Start service / 启动服务
@@ -1018,38 +992,36 @@ def _manage_service() -> bool | None:
     if choice is None or choice == BACK_ACTION:
         return None
 
+    _dc = ["docker", "compose", "-f", str(COMPOSE_FILE_PATH)]
+    _docker_dispatch = {
+        "start": lambda: run_verbose([*_dc, "up", "-d"]),
+        "stop": lambda: run_verbose([*_dc, "down"]),
+        "restart": lambda: run_verbose([*_dc, "restart"]),
+    }
+    _systemctl = ["sudo", "systemctl"]
+    _systemd_dispatch = {
+        "start": lambda: run_verbose([*_systemctl, "start", DERP_SERVICE_NAME]),
+        "stop": lambda: run_verbose([*_systemctl, "stop", DERP_SERVICE_NAME]),
+        "restart": lambda: run_verbose([*_systemctl, "restart", DERP_SERVICE_NAME]),
+    }
+
     if method == "docker":
-        if choice == "start":
-            code = run_verbose(["docker", "compose", "-f", str(COMPOSE_FILE_PATH), "up", "-d"])
-        elif choice == "stop":
-            code = run_verbose(["docker", "compose", "-f", str(COMPOSE_FILE_PATH), "down"])
-        elif choice == "restart":
-            code = run_verbose(["docker", "compose", "-f", str(COMPOSE_FILE_PATH), "restart"])
-        elif choice == "update":
+        if choice == "update":
             print_info(t("msg.derp_updating"))
-            run_verbose(["docker", "compose", "-f", str(COMPOSE_FILE_PATH), "pull"])
-            code = run_verbose(["docker", "compose", "-f", str(COMPOSE_FILE_PATH), "up", "-d"])
+            run_verbose([*_dc, "pull"])
+            code = run_verbose([*_dc, "up", "-d"])
+        elif choice in _docker_dispatch:
+            code = _docker_dispatch[choice]()
         else:
             return False
     else:
-        if choice == "start":
-            code = run_verbose(["sudo", "systemctl", "start", DERP_SERVICE_NAME])
-        elif choice == "stop":
-            code = run_verbose(["sudo", "systemctl", "stop", DERP_SERVICE_NAME])
-        elif choice == "restart":
-            code = run_verbose(["sudo", "systemctl", "restart", DERP_SERVICE_NAME])
-        elif choice == "update":
+        if choice == "update":
             print_info(t("msg.derp_updating_binary"))
-            distro = detect_distro()
-            if distro == "arch":
-                run_verbose(["sudo", "pacman", "-S", "--noconfirm", "tailscale"])
-            elif distro in ("debian", "ubuntu"):
-                run_verbose(["sudo", "apt-get", "install", "--only-upgrade", "-y", "tailscale"])
-            elif distro == "fedora":
-                run_verbose(["sudo", "dnf", "upgrade", "-y", "tailscale"])
-            elif distro == "suse":
-                run_verbose(["sudo", "zypper", "update", "-y", "tailscale"])
-            code = run_verbose(["sudo", "systemctl", "restart", DERP_SERVICE_NAME])
+            from utils.platform_services import package_install
+            package_install("tailscale", detect_distro())
+            code = run_verbose([*_systemctl, "restart", DERP_SERVICE_NAME])
+        elif choice in _systemd_dispatch:
+            code = _systemd_dispatch[choice]()
         else:
             return False
 
@@ -1251,19 +1223,19 @@ class TailscaleDerp(Tool):
 
     def _deploy_headscale(self) -> bool | None:
         # Check if already running / 检查是否已在运行
+        already_running = False
         hs_compose = HEADSCALE_DATA_DIR / "docker-compose.yml"
         if _sudo_exists(hs_compose):
             code, out = run_cmd(["docker", "compose", "-f", str(hs_compose), "ps", "-q"])
-            if code == 0 and out:
-                print_warning(t("msg.derp_headscale_already_deployed"))
-                if not confirm(t("msg.derp_headscale_redeploy_confirm")):
-                    return None
+            already_running = code == 0 and bool(out)
         else:
             code, _ = run_cmd(["systemctl", "is-active", HEADSCALE_SERVICE_NAME])
-            if code == 0:
-                print_warning(t("msg.derp_headscale_already_deployed"))
-                if not confirm(t("msg.derp_headscale_redeploy_confirm")):
-                    return None
+            already_running = code == 0
+
+        if already_running:
+            print_warning(t("msg.derp_headscale_already_deployed"))
+            if not confirm(t("msg.derp_headscale_redeploy_confirm")):
+                return None
 
         if not confirm(t("msg.derp_headscale_deploy_confirm")):
             return None

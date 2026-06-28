@@ -232,7 +232,9 @@ def _group_tools(tools: list) -> dict:
     groups = {}
     for i, tool in enumerate(tools):
         raw_group = tool.group
-        group = t(f"ui.group_{raw_group}")
+        key = f"ui.group_{raw_group}"
+        translated = t(key)
+        group = translated if translated != key else raw_group.capitalize()
 
         if group not in groups:
             groups[group] = []

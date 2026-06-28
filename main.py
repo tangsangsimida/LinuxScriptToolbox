@@ -148,6 +148,8 @@ def main() -> None:
     if args.tool:
         tool = find_tool(args.tool, distro, current_platform)
         if tool is None:
+            # Check if tool exists but isn't available for current env /
+            # 检查工具是否存在但不适用于当前环境
             if find_tool(args.tool) is not None:
                 print_error(t("msg.tool_not_available", tool=args.tool, distro=distro, platform=current_platform))
             else:
