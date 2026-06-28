@@ -75,6 +75,7 @@ class DevToolsSetup(Tool):
     display_name = "Dev Tools Setup"  # Display name shown in menu / 菜单中显示的名称
     description = "Quick install embedded toolchains (ARM GCC, RISC-V GCC)"  # Tool description / 工具描述
     distros = ["arch", "debian", "fedora", "suse"]  # Supported distros / 支持的发行版
+    group = "dev"  # Menu group / 菜单分组
     requires_network = True  # Package download requires network / 下载安装包需要网络
     requires_sudo = True  # Package installation requires root privileges / 安装包需要 root 权限
 

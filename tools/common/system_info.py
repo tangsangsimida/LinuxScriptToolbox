@@ -321,6 +321,7 @@ class SystemInfo(Tool):
     display_name = "System Info"  # Display name shown in menus / 在菜单中显示的名称
     description = "Display hardware overview, disk usage, network status, and services"  # Tool description / 工具描述
     distros = ["arch", "debian", "fedora", "suse", "unknown", "windows"]  # Supported distros / 支持的发行版
+    group = "system"  # Menu group / 菜单分组
     platforms = ["linux", "windows"]  # Supported platforms / 支持的平台
     mutates_system = False  # Does not modify system / 不修改系统
     safe_for_run_all = True  # Safe to run all info at once / 可以安全地一次运行所有信息

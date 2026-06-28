@@ -20,6 +20,24 @@ from tools.base import Tool
 _TOOLS_PKG = Path(__file__).parent
 
 
+def _auto_import_translations(modname: str) -> None:
+    """Auto-import the matching *_translations.py sibling of a tool module.
+
+    自动导入工具模块对应的 *_translations.py 兄弟模块。
+
+    For example, tools.common.device_init → tools.common.device_init_translations.
+    importlib caches modules in sys.modules, so repeated calls are cheap.
+
+    Args:
+        modname: Fully qualified module name (e.g. "tools.common.device_init")
+    """
+    trans_modname = f"{modname}_translations"
+    try:
+        importlib.import_module(trans_modname)
+    except ImportError:
+        pass  # No translations module for this tool / 此工具没有翻译模块
+
+
 # Walk the tools/ package and instantiate every Tool subclass found.
 #
 # 遍历 tools/ 包，实例化找到的每个 Tool 子类。
@@ -39,7 +57,14 @@ def _discover_tools() -> list[Tool]:
         # Skip init modules and the base module / 跳过 init 模块和 base 模块
         if modname.endswith(".__init__") or modname == "tools.base":
             continue
-        mod = importlib.import_module(modname)
+        try:
+            mod = importlib.import_module(modname)
+        except ImportError as e:
+            warnings.warn(f"Failed to import tool module {modname}: {e}")
+            continue
+
+        # Auto-import sibling translation modules / 自动导入同级翻译模块
+        _auto_import_translations(modname)
         for attr in dir(mod):
             cls = getattr(mod, attr)
             if (
@@ -47,7 +72,10 @@ def _discover_tools() -> list[Tool]:
                 and issubclass(cls, Tool)
                 and cls is not Tool
             ):
-                tools.append(cls())
+                try:
+                    tools.append(cls())
+                except Exception as e:
+                    warnings.warn(f"Failed to instantiate {attr} from {modname}: {e}")
     return tools
 
 

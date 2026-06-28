@@ -183,6 +183,7 @@ class BackupRestore(Tool):
     display_name = "Backup/Restore"
     description = "Backup and restore critical system configuration files"
     distros = ["arch", "debian", "fedora", "suse", "unknown"]
+    group = "data"
     requires_sudo = True
 
     def run(self) -> bool | None:

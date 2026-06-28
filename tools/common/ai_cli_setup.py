@@ -247,6 +247,7 @@ class AiCliSetup(Tool):
     description = "One-click install AI coding assistant CLIs (Claude Code, Codex, Gemini, OpenCode, MiMo)"  # Tool description / 工具描述
     distros = ["arch", "debian", "fedora", "suse", "unknown", "windows"]  # Supported distros / 支持的发行版列表
     platforms = ["linux", "windows"]  # Supported platforms / 支持的平台列表
+    group = "dev"  # Menu group / 菜单分组
     requires_network = True  # Needs internet access / 需要网络连接
     requires_sudo = True  # Needs root privileges / 需要管理员权限
 

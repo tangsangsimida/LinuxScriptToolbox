@@ -359,6 +359,7 @@ class DeviceInitializer(Tool):
     description = "Set up SSH access, password, config, firewall and python alias"
     distros = list(DISTRO_CONFIG.keys())
     platforms = ("linux", "windows")
+    group = "system"
     requires_network = True
     requires_sudo = True
 

@@ -330,6 +330,7 @@ class MirrorOptimizer(Tool):
     display_name = "Optimize Mirrors"
     description = "Replace package manager mirrors with China mirrors (supports any distro)"
     distros = ["arch", "debian", "fedora", "suse", "unknown"]
+    group = "env"
     requires_sudo = True
 
     def run(self) -> bool | None:

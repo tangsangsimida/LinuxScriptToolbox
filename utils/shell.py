@@ -8,6 +8,7 @@ environment variables and the parent process.
 通过检查环境变量和父进程来检测 bash、zsh、fish、PowerShell、cmd 等 Shell。
 """
 
+import functools
 import os
 import shutil
 import subprocess
@@ -29,6 +30,7 @@ from utils.platform import detect_platform
 #
 #     Shell 名称："bash"、"zsh"、"fish"、"powershell"、"pwsh"、"cmd"、
 #     "nushell"、"elvish"、"xonsh" 或 "unknown"
+@functools.lru_cache(maxsize=1)
 def detect_shell() -> str:
     if detect_platform() == "windows":
         return _detect_windows_shell()

@@ -9,6 +9,22 @@ import sys
 from pathlib import Path
 
 
+# Return the platform-aware path to a venv executable.
+#
+# 返回平台感知的虚拟环境可执行文件路径。
+#
+# Args:
+#     venv_dir: Path to the virtualenv directory / 虚拟环境目录路径
+#     name: Executable name (e.g. "python", "pip") / 可执行文件名
+#
+# Returns:
+#     Path to the executable / 可执行文件路径
+def _get_venv_bin(venv_dir: Path, name: str) -> Path:
+    if sys.platform == "win32":
+        return venv_dir / "Scripts" / f"{name}.exe"
+    return venv_dir / "bin" / name
+
+
 # Run the current script under the project's virtual environment.
 #
 # 在项目的虚拟环境下运行当前脚本。如果当前已处于虚拟环境中则直接返回，
@@ -27,7 +43,7 @@ def ensure_venv(project_dir: Path) -> None:
         return
 
     venv_dir = project_dir / ".venv"
-    venv_python = venv_dir / "bin" / "python"
+    venv_python = _get_venv_bin(venv_dir, "python")
     if venv_python.exists():
         # Replace current process with venv Python interpreter / 用虚拟环境 Python 解释器替换当前进程
         os.execvp(str(venv_python), [str(venv_python)] + sys.argv)
@@ -56,7 +72,7 @@ def _setup_venv(project_dir: Path, venv_dir: Path, requirements: Path) -> None:
         print("Error: Failed to create virtual environment.")
         raise SystemExit(1)
 
-    venv_pip = venv_dir / "bin" / "pip"
+    venv_pip = _get_venv_bin(venv_dir, "pip")
     if requirements.exists():
         print("Installing dependencies...")
         # Install project dependencies from requirements.txt / 从 requirements.txt 安装项目依赖
@@ -64,6 +80,6 @@ def _setup_venv(project_dir: Path, venv_dir: Path, requirements: Path) -> None:
             print("Error: Failed to install dependencies.")
             raise SystemExit(1)
 
-    venv_python = venv_dir / "bin" / "python"
+    venv_python = _get_venv_bin(venv_dir, "python")
     # Re-execute the current script using the new venv Python / 使用新虚拟环境的 Python 重新执行当前脚本
     os.execvp(str(venv_python), [str(venv_python)] + sys.argv)

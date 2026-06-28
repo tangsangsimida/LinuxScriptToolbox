@@ -133,6 +133,7 @@ class SystemCleanup(Tool):
     display_name = "System Cleanup"
     description = "Clean package caches, journal logs, and temporary files"
     distros = ["arch", "debian", "fedora", "suse", "unknown"]
+    group = "system"
     requires_sudo = True
 
     def run(self) -> bool | None:

@@ -80,6 +80,7 @@ def parse_args() -> argparse.Namespace:
 # Returns:
 #     Tool instance if found, None otherwise / 找到则返回 Tool 实例，否则返回 None
 def find_tool(name: str, distro: str = None, platform: str = None):
+    # First search the filtered list for an exact match / 先在过滤后的列表中精确查找
     tools = get_tools(distro, platform) if distro or platform else TOOLS
     for tool in tools:
         if tool.name == name:
@@ -147,9 +148,12 @@ def main() -> None:
     if args.tool:
         tool = find_tool(args.tool, distro, current_platform)
         if tool is None:
-            print_error(f"Tool not found: {args.tool}")
+            if find_tool(args.tool) is not None:
+                print_error(t("msg.tool_not_available", tool=args.tool, distro=distro, platform=current_platform))
+            else:
+                print_error(t("msg.tool_not_found", tool=args.tool))
             available = [t.name for t in get_tools(distro, current_platform)]
-            print_info(f"Available: {', '.join(available)}")
+            print_info(t("msg.tools_available", tools=", ".join(available)))
             sys.exit(1)
         show_tool_header(tool_display_name(tool))
         result = tool.run()

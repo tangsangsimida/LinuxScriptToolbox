@@ -212,6 +212,7 @@ class QuickFixes(Tool):
     display_name = "Quick Fixes"  # Display name shown in menu / 菜单中显示的名称
     description = "One-click fixes for common Linux software issues"  # Tool description / 工具描述
     distros = ["arch", "debian", "fedora", "suse", "unknown"]  # Supported distros / 支持的发行版
+    group = "fix"  # Menu group / 菜单分组
     requires_sudo = True  # Requires sudo for some fixes / 部分修复需要 sudo 权限
 
     # Fix STM32CubeMX blank popup/dialog issue on Wayland by creating an X11 wrapper.

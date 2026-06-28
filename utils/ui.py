@@ -179,7 +179,10 @@ def _build_tool_choices(tools: list) -> tuple[list, dict[str, int]]:
             choices.append(
                 questionary.Choice(title=f"[{num}] {name} — {desc}", value=i)
             )
-            char_map[str(num)] = i
+            # Only bind single-digit keys (1-9); tools 10+ use arrow keys + Enter
+            # 只绑定单位数字键（1-9）；第 10 项以上使用方向键 + 回车
+            if num <= 9:
+                char_map[str(num)] = i
 
     choices.append(questionary.Separator())
     choices.append(questionary.Choice(title=f"[0/a] {t('ui.run_all')}", value=-1))
@@ -228,17 +231,8 @@ def select_tool(tools: list) -> Optional[int]:
 def _group_tools(tools: list) -> dict:
     groups = {}
     for i, tool in enumerate(tools):
-        module = type(tool).__module__
-        if "common" in module:
-            group = t("ui.group_common")
-        elif "arch" in module:
-            group = t("ui.group_arch")
-        elif "debian" in module:
-            group = t("ui.group_debian")
-        elif "windows" in module:
-            group = t("ui.group_windows")
-        else:
-            group = "Other"
+        raw_group = tool.group
+        group = t(f"ui.group_{raw_group}")
 
         if group not in groups:
             groups[group] = []
@@ -254,10 +248,16 @@ def _select_tool_fallback(tools: list) -> Optional[int]:
     console.print(f"  [bold]{t('ui.available_tools')}[/bold]")
     console.print()
 
-    for i, tool in enumerate(tools, 1):
-        name = tool_display_name(tool)
-        desc = tool_description(tool)
-        console.print(f"  [{i}] {name} — {desc}")
+    groups = _group_tools(tools)
+    num = 0
+    for group_name, group_tools in groups.items():
+        if len(groups) > 1:
+            console.print(f"  --- {group_name} ---")
+        for i, tool in group_tools:
+            num += 1
+            name = tool_display_name(tool)
+            desc = tool_description(tool)
+            console.print(f"  [{num}] {name} — {desc}")
 
     console.print()
     console.print(f"  [a] {t('ui.run_all')}  [l] {t('ui.language')}  [q] {t('ui.quit')}")

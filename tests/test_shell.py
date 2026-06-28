@@ -22,7 +22,9 @@ class TestDetectShell(TestCase):
 
     def setUp(self):
         from utils.platform import detect_platform
+        from utils.shell import detect_shell
         detect_platform.cache_clear()
+        detect_shell.cache_clear()
 
     # Test bash detection via SHELL env var
     @patch("utils.shell.detect_platform", return_value="linux")
@@ -103,7 +105,9 @@ class TestDetectShellWindows(TestCase):
 
     def setUp(self):
         from utils.platform import detect_platform
+        from utils.shell import detect_shell
         detect_platform.cache_clear()
+        detect_shell.cache_clear()
 
     # Test PowerShell detection on Windows
     @patch("utils.shell.detect_platform", return_value="windows")
