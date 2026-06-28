@@ -9,7 +9,7 @@ from utils.cmd_utils import run_cmd, run_verbose
 from utils.distro import detect_distro
 from utils.i18n import t
 from utils.platform import IS_WINDOWS, command_exists
-from utils.platform_services import package_install
+from utils.platform_services import package_install, packages_install
 from utils.ui import print_success, print_error, print_info, console, prompt_selection, BACK_ACTION
 
 MIN_NODE_MAJOR = 18  # Minimum required Node.js major version / 最低要求的 Node.js 主版本号
@@ -119,23 +119,17 @@ def _install_nodejs(distro: str) -> bool:
     print_info(t("msg.ai_cli_nodejs_installing"))
 
     if IS_WINDOWS:
-        # Windows: package_install handles winget → chocolatey fallback
-        # Windows：package_install 处理 winget → chocolatey 回退
-        code = package_install("OpenJS.NodeJS.LTS", distro)
+        # Windows: winget ID differs from choco name — use :: mapping
+        # Windows：winget ID 与 choco 包名不同 — 使用 :: 映射
+        code = package_install("OpenJS.NodeJS.LTS::nodejs-lts", distro)
     else:
-        # Linux: use distro package manager; Debian refreshes index first
-        # Linux：使用发行版包管理器；Debian 先刷新索引
+        # Linux: batch-install all required packages (one subprocess call)
+        # Linux：批量安装所有必需软件包（一次子进程调用）
         pkgs = DISTRO_NODEJS_PKGS.get(distro)
         if pkgs is None:
             print_error(t("msg.ai_cli_nodejs_unknown"))
             return False
-        # Install all required packages; first one triggers apt-get update for Debian
-        # 安装所有必需软件包；第一个包触发 Debian 的 apt-get update
-        code = 0
-        for i, pkg in enumerate(pkgs):
-            if package_install(pkg, distro, update_first=(i == 0)) != 0:
-                code = 1
-                break
+        code = packages_install(pkgs, distro)
 
     if code != 0:
         print_error(t("msg.ai_cli_nodejs_install_failed"))

@@ -7,7 +7,7 @@ from tools.base import Tool
 from . import dev_tools_translations  # noqa: F401 - side-effect import for i18n registration
 from utils.distro import detect_distro
 from utils.i18n import t
-from utils.platform_services import package_is_installed, package_install
+from utils.platform_services import package_is_installed, packages_install
 from utils.ui import print_success, print_error, print_info, console, prompt_selection, BACK_ACTION
 
 # Available toolchain options with per-distro package mappings
@@ -50,12 +50,8 @@ TOOLCHAIN_OPTIONS = [
 # Returns:
 #     True if all packages installed successfully, False otherwise. / 全部安装成功返回 True，否则返回 False。
 def _install_packages(pkgs: list[str], distro: str) -> bool:
-    # Install each package; update apt index on first Debian install
-    # 逐个安装软件包；Debian 首次安装时更新 apt 索引
-    for i, pkg in enumerate(pkgs):
-        if package_install(pkg, distro, update_first=(i == 0)) != 0:
-            return False
-    return True
+    """Install packages using batch mode (one subprocess call). / 批量安装（一次子进程调用）。"""
+    return packages_install(pkgs, distro) == 0
 
 
 class DevToolsSetup(Tool):

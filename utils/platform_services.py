@@ -14,6 +14,9 @@ import platform as platform_mod
 from utils.cmd_utils import run_cmd, run_verbose
 from utils.platform import IS_WINDOWS, command_exists, detect_platform
 
+# Per-run dedup flag for apt-get update / 每次运行只执行一次 apt-get update
+_apt_index_refreshed = False
+
 
 # ── PowerShell execution ────────────────────────────────────────
 
@@ -103,44 +106,119 @@ def service_status(service: str) -> str:
 
 # ── Package management ──────────────────────────────────────────
 
-def package_install(package: str, distro: str, *, update_first: bool = False) -> int:
-    """Install a package using the distro's package manager.
+def _parse_pkg_names(package: str) -> tuple[str, str]:
+    """Parse a package name into (winget_id, choco_name).
 
-    使用发行版包管理器安装软件包。
+    解析包名为 (winget_id, choco_name)。
+
+    Supports plain strings (used as-is for both backends) and
+    "winget_id::choco_name" mapping format.
+
+    支持普通字符串（两个后端通用）和 "winget_id::choco_name" 映射格式。
+    """
+    if "::" in package:
+        winget_id, choco_name = package.split("::", 1)
+        return winget_id, choco_name
+    return package, package
+
+
+def _ensure_apt_index(distro: str) -> None:
+    """Run apt-get update once per process for Debian-based distros.
+
+    为 Debian 系发行版在每个进程中只执行一次 apt-get update。
+    """
+    global _apt_index_refreshed
+    if not _apt_index_refreshed and distro in ("debian", "ubuntu"):
+        run_verbose(["sudo", "apt-get", "update", "-qq"])
+        _apt_index_refreshed = True
+
+
+def package_install(package: str, distro: str) -> int:
+    """Install a single package using the distro's package manager.
+
+    使用发行版包管理器安装单个软件包。
+
+    On Windows, tries winget first, falls back to chocolatey.
+    Supports "winget_id::choco_name" mapping format.
+
+    Windows 上先尝试 winget，回退到 chocolatey。支持 "winget_id::choco_name" 映射格式。
+
+    On Debian-based distros, automatically runs apt-get update once per process.
+
+    Debian 系发行版在首次安装前自动执行 apt-get update。
 
     Args:
-        package: Package name / 包名
+        package: Package name (plain or winget::choco mapping) /
+                 包名（普通或 winget::choco 映射格式）
         distro: Distribution identifier / 发行版标识
-        update_first: Run apt-get update before install (Debian only) /
-                      安装前先运行 apt-get update（仅 Debian）
 
     Returns:
         Exit code (0 = success) / 退出码（0 = 成功）
     """
     if IS_WINDOWS:
-        # Windows: try winget, fall back to chocolatey
-        # Windows：先尝试 winget，回退到 chocolatey
+        winget_id, choco_name = _parse_pkg_names(package)
         if command_exists("winget"):
-            code = run_verbose(["winget", "install", "--id", package, "-e"])
+            code = run_verbose(["winget", "install", "--id", winget_id, "-e", "--accept-source-agreements"])
             if code == 0:
                 return 0
         if command_exists("choco"):
-            return run_verbose(["choco", "install", package, "-y"])
+            return run_verbose(["choco", "install", choco_name, "-y"])
         return 1
 
-    # Debian: optionally refresh index first
-    # Debian：可选先刷新索引
-    if update_first and distro in ("debian", "ubuntu"):
-        run_verbose(["sudo", "apt-get", "update", "-qq"])
+    # Linux: delegate to batch function for single package
+    # Linux：委托给批量函数处理单个包
+    return packages_install([package], distro)
+
+
+def packages_install(packages: list[str], distro: str) -> int:
+    """Install multiple packages in a single operation.
+
+    单次操作安装多个软件包。
+
+    More efficient than calling package_install() in a loop — uses one
+    subprocess call per distro instead of one per package.
+
+    比循环调用 package_install() 更高效 — 每个发行版只用一次子进程调用。
+
+    Args:
+        packages: List of package names / 包名列表
+        distro: Distribution identifier / 发行版标识
+
+    Returns:
+        Exit code (0 = all succeeded) / 退出码（0 = 全部成功）
+    """
+    if not packages:
+        return 0
+
+    if IS_WINDOWS:
+        # Try winget first for each package, collect failures for choco batch
+        # 先尝试 winget 安装每个包，收集失败的包用于 choco 批量安装
+        choco_candidates = []
+        for pkg in packages:
+            winget_id, choco_name = _parse_pkg_names(pkg)
+            if command_exists("winget"):
+                code = run_verbose(["winget", "install", "--id", winget_id, "-e", "--accept-source-agreements"])
+                if code == 0:
+                    continue
+            choco_candidates.append(choco_name)
+        # Batch-install remaining packages via choco
+        # 通过 choco 批量安装剩余包
+        if choco_candidates:
+            if command_exists("choco"):
+                return run_verbose(["choco", "install"] + choco_candidates + ["-y"])
+            return 1
+        return 0
+
+    _ensure_apt_index(distro)
 
     if distro == "arch":
-        return run_verbose(["sudo", "pacman", "-S", "--noconfirm", package])
+        return run_verbose(["sudo", "pacman", "-S", "--noconfirm"] + packages)
     elif distro == "fedora":
-        return run_verbose(["sudo", "dnf", "install", "-y", package])
+        return run_verbose(["sudo", "dnf", "install", "-y"] + packages)
     elif distro == "suse":
-        return run_verbose(["sudo", "zypper", "install", "-y", package])
+        return run_verbose(["sudo", "zypper", "install", "-y"] + packages)
     else:
-        return run_verbose(["sudo", "apt-get", "install", "-y", package])
+        return run_verbose(["sudo", "apt-get", "install", "-y"] + packages)
 
 
 def package_is_installed(package: str, distro: str) -> bool:
@@ -149,23 +227,27 @@ def package_is_installed(package: str, distro: str) -> bool:
     检查软件包是否已安装。
 
     Args:
-        package: Package name / 包名
+        package: Package name (plain or winget::choco mapping) /
+                 包名（普通或 winget::choco 映射格式）
         distro: Distribution identifier / 发行版标识
 
     Returns:
         True if installed / 已安装时返回 True
     """
     if IS_WINDOWS:
-        # winget: search installed packages
+        winget_id, choco_name = _parse_pkg_names(package)
+
         if command_exists("winget"):
-            code, out = run_cmd(["winget", "list", "--id", package])
-            if code == 0 and package.lower() in out.lower():
+            code, out = run_cmd(["winget", "list", "--id", winget_id, "--accept-source-agreements"])
+            if code == 0 and winget_id.lower() in out.lower():
                 return True
-        # chocolatey: choco list --local-only
         if command_exists("choco"):
-            code, out = run_cmd(["choco", "list", "--local-only", package])
-            if code == 0 and package.lower() in out.lower():
-                return True
+            code, out = run_cmd(["choco", "list", "--local-only", choco_name, "--limit-output"])
+            # choco --limit-output: "packagename|version" per line
+            if code == 0:
+                for line in out.splitlines():
+                    if line.split("|")[0].lower() == choco_name.lower():
+                        return True
         return False
 
     if distro == "arch":
