@@ -32,6 +32,7 @@ class TestToolDiscovery(TestCase):
             self.assertTrue(hasattr(tool, 'display_name'), f"Tool {tool} missing 'display_name'")
             self.assertTrue(hasattr(tool, 'description'), f"Tool {tool} missing 'description'")
             self.assertTrue(hasattr(tool, 'distros'), f"Tool {tool} missing 'distros'")
+            self.assertTrue(hasattr(tool, 'platforms'), f"Tool {tool} missing 'platforms'")
             self.assertTrue(hasattr(tool, 'run'), f"Tool {tool} missing 'run'")
             self.assertTrue(hasattr(tool, 'mutates_system'), f"Tool {tool} missing 'mutates_system'")
             self.assertTrue(hasattr(tool, 'requires_network'), f"Tool {tool} missing 'requires_network'")
@@ -49,6 +50,23 @@ class TestToolDiscovery(TestCase):
         from tools import TOOLS
         for tool in TOOLS:
             self.assertGreater(len(tool.distros), 0, f"Tool {tool.name} has empty distros")
+
+    def test_all_tools_have_non_empty_platforms(self):
+        """Test that all tools have at least one platform."""
+        from tools import TOOLS
+        for tool in TOOLS:
+            self.assertGreater(len(tool.platforms), 0, f"Tool {tool.name} has empty platforms")
+
+    def test_all_tools_have_valid_platforms(self):
+        """Test that all tools use valid platform values."""
+        from tools import TOOLS
+        valid_platforms = {"linux", "windows", "macos"}
+        for tool in TOOLS:
+            for platform in tool.platforms:
+                self.assertIn(
+                    platform, valid_platforms,
+                    f"Tool {tool.name} has invalid platform: {platform}"
+                )
 
     def test_run_all_tools_are_read_only(self):
         """Only explicitly safe read-only tools should participate in run-all."""
@@ -102,6 +120,69 @@ class TestGetToolsForDistro(TestCase):
         from tools import get_tools_for_distro
         result = get_tools_for_distro("nonexistent_distro_xyz")
         self.assertEqual(len(result), 0)
+
+
+class TestGetToolsForPlatform(TestCase):
+    """Test get_tools_for_platform() function."""
+
+    def test_linux_tools(self):
+        """Test filtering tools for Linux platform."""
+        from tools import get_tools_for_platform
+        linux_tools = get_tools_for_platform("linux")
+        self.assertGreater(len(linux_tools), 0)
+        for tool in linux_tools:
+            self.assertIn("linux", tool.platforms)
+
+    def test_windows_tools(self):
+        """Test filtering tools for Windows platform."""
+        from tools import get_tools_for_platform
+        windows_tools = get_tools_for_platform("windows")
+        # Should have at least system-info, mirror-optimizer, ai-cli-setup
+        self.assertGreater(len(windows_tools), 0)
+        for tool in windows_tools:
+            self.assertIn("windows", tool.platforms)
+
+    def test_macos_tools(self):
+        """Test filtering tools for macOS platform."""
+        from tools import get_tools_for_platform
+        macos_tools = get_tools_for_platform("macos")
+        # macOS support is not yet implemented; expect empty
+        self.assertEqual(len(macos_tools), 0)
+
+    def test_nonexistent_platform_returns_empty(self):
+        """Test that nonexistent platform returns empty list."""
+        from tools import get_tools_for_platform
+        result = get_tools_for_platform("nonexistent_platform_xyz")
+        self.assertEqual(len(result), 0)
+
+
+class TestGetTools(TestCase):
+    """Test get_tools() function with both distro and platform filtering."""
+
+    def test_linux_arch(self):
+        """Test filtering for Linux Arch."""
+        from tools import get_tools
+        tools = get_tools("arch", "linux")
+        self.assertGreater(len(tools), 0)
+        for tool in tools:
+            self.assertIn("arch", tool.distros)
+            self.assertIn("linux", tool.platforms)
+
+    def test_windows(self):
+        """Test filtering for Windows."""
+        from tools import get_tools
+        tools = get_tools("windows", "windows")
+        self.assertGreater(len(tools), 0)
+        for tool in tools:
+            self.assertIn("windows", tool.distros)
+            self.assertIn("windows", tool.platforms)
+
+    def test_no_match_returns_empty(self):
+        """Test that non-matching combo returns empty."""
+        from tools import get_tools
+        # nonexistent distro + nonexistent platform should return nothing
+        tools = get_tools("nonexistent_distro_xyz", "nonexistent_platform_xyz")
+        self.assertEqual(len(tools), 0)
 
 
 def run_tests():

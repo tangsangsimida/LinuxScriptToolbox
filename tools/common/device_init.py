@@ -2,9 +2,11 @@ import getpass
 from pathlib import Path
 
 from tools.base import Tool
+from . import device_init_translations  # noqa: F401 - side-effect import for i18n registration
 from utils.cmd_utils import run_cmd, run_cmd_with_stdin, run_verbose
 from utils.distro import detect_distro
 from utils.i18n import t
+from utils.platform import command_exists
 from utils.sudo_utils import write_file, copy_file
 from utils.ui import print_success, print_error, print_info, print_warning, confirm
 
@@ -77,11 +79,11 @@ def _open_firewall_ssh() -> None:
     print_info(t("msg.step_firewall"))
 
     fw = None
-    if run_cmd(["which", "ufw"])[0] == 0:
+    if command_exists("ufw"):
         fw = "ufw"
-    elif run_cmd(["which", "firewall-cmd"])[0] == 0:
+    elif command_exists("firewall-cmd"):
         fw = "firewalld"
-    elif run_cmd(["which", "iptables"])[0] == 0:
+    elif command_exists("iptables"):
         fw = "iptables"
 
     if fw is None:
@@ -115,9 +117,9 @@ class DeviceInitializer(Tool):
         return DISTRO_CONFIG.get(distro, DISTRO_CONFIG["debian"])
 
     def _is_installed(self, package: str) -> bool:
-        if run_cmd(["which", "pacman"])[0] == 0:
+        if command_exists("pacman"):
             code, _ = run_cmd(["pacman", "-Qi", package])
-        elif run_cmd(["which", "rpm"])[0] == 0:
+        elif command_exists("rpm"):
             code, _ = run_cmd(["rpm", "-q", package])
         else:
             code, _ = run_cmd(["dpkg", "-s", package])
@@ -145,8 +147,8 @@ class DeviceInitializer(Tool):
 
     def _setup_python_alias(self) -> None:
         """Create persistent 'python' symlink if python3 exists but python doesn't."""
-        has_python3 = run_cmd(["which", "python3"])[0] == 0
-        has_python = run_cmd(["which", "python"])[0] == 0
+        has_python3 = command_exists("python3")
+        has_python = command_exists("python")
 
         if not has_python3:
             print_warning(t("msg.python3_not_found"))
@@ -215,3 +217,18 @@ class DeviceInitializer(Tool):
         self._setup_python_alias()
 
         return True
+
+
+    def run_dry(self) -> str | None:
+        """Preview device initialization steps."""
+        lines = ["[DRY-RUN] Device Init would:", ""]
+        lines.append("  1. Install openssh-server (if not present)")
+        lines.append("  2. Start and enable sshd service")
+        lines.append("  3. Set user password (interactive)")
+        lines.append("  4. Enable PasswordAuthentication in /etc/ssh/sshd_config")
+        lines.append("  5. Restart sshd")
+        lines.append("  6. Add firewall rule for SSH (port 22)")
+        lines.append("  7. Create python -> python3 alias")
+        lines.append("")
+        lines.append("  Modified files: /etc/ssh/sshd_config, firewall rules")
+        return "\n".join(lines)

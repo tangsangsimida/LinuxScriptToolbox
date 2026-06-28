@@ -4,9 +4,11 @@ import shutil
 from pathlib import Path
 
 from tools.base import Tool
+from . import system_cleanup_translations  # noqa: F401 - side-effect import for i18n registration
 from utils.cmd_utils import run_cmd, run_verbose
 from utils.distro import detect_distro
 from utils.i18n import t
+from utils.platform import command_exists
 from utils.ui import (
     print_success,
     print_error,
@@ -72,7 +74,7 @@ def _clean_journal() -> bool:
     print_info(t("msg.cleanup_journal_running"))
 
     # Check if journalctl exists
-    if run_cmd(["which", "journalctl"])[0] != 0:
+    if not command_exists("journalctl"):
         print_warning(t("msg.cleanup_journal_not_found"))
         return True
 
@@ -166,3 +168,20 @@ class SystemCleanup(Tool):
 
         print_error(t("ui.invalid_selection"))
         return False
+
+
+    def run_dry(self) -> str | None:
+        """Preview cleanup operations."""
+        distro = detect_distro()
+        lines = ["[DRY-RUN] System Cleanup would:", ""]
+        if distro == "arch":
+            lines.append("  Package cache: pacman -Scc")
+        elif distro in ("debian", "ubuntu"):
+            lines.append("  Package cache: apt-get clean && apt-get autoremove")
+        elif distro == "fedora":
+            lines.append("  Package cache: dnf clean all")
+        elif distro == "suse":
+            lines.append("  Package cache: zypper clean")
+        lines.append("  Journal logs: journalctl --vacuum-time=7d")
+        lines.append("  Temp files: clean /tmp and ~/.cache/")
+        return "\n".join(lines)

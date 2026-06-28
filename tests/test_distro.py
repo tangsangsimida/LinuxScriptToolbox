@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Unit tests for utils/distro.py module.
 
-Tests distribution detection with mocked /etc/os-release content.
+Tests distribution detection with mocked /etc/os-release content
+and platform detection.
 
 Usage:
     python -m pytest tests/test_distro.py -v
@@ -18,126 +19,125 @@ sys.path.insert(0, str(PROJECT_DIR))
 
 
 class TestDetectDistro(TestCase):
-    """Test detect_distro() function."""
+    """Test detect_distro() function on Linux."""
 
-    @patch("utils.distro.Path")
-    def test_arch_linux(self, mock_path):
+    def setUp(self):
+        self._patch_platform = patch("utils.distro.detect_platform", return_value="linux")
+        self._patch_path = patch("utils.distro.Path")
+        self.mock_platform = self._patch_platform.start()
+        self.mock_path = self._patch_path.start()
+
+    def tearDown(self):
+        self._patch_path.stop()
+        self._patch_platform.stop()
+
+    def _set_os_release(self, content: str):
+        mock_os_release = MagicMock()
+        mock_os_release.exists.return_value = True
+        mock_os_release.read_text.return_value = content
+        self.mock_path.return_value = mock_os_release
+
+    def test_arch_linux(self):
         """Test detection of Arch Linux."""
-        mock_os_release = MagicMock()
-        mock_os_release.exists.return_value = True
-        mock_os_release.read_text.return_value = 'ID=arch\nNAME="Arch Linux"'
-        mock_path.return_value = mock_os_release
-
+        self._set_os_release('ID=arch\nNAME="Arch Linux"')
         from utils.distro import detect_distro
-        result = detect_distro()
-        self.assertEqual(result, "arch")
+        self.assertEqual(detect_distro(), "arch")
 
-    @patch("utils.distro.Path")
-    def test_arch_like(self, mock_path):
+    def test_arch_like(self):
         """Test detection of Arch-like distros (e.g., Manjaro)."""
-        mock_os_release = MagicMock()
-        mock_os_release.exists.return_value = True
-        mock_os_release.read_text.return_value = 'ID=manjaro\nID_LIKE=arch'
-        mock_path.return_value = mock_os_release
-
+        self._set_os_release('ID=manjaro\nID_LIKE=arch')
         from utils.distro import detect_distro
-        result = detect_distro()
-        self.assertEqual(result, "arch")
+        self.assertEqual(detect_distro(), "arch")
 
-    @patch("utils.distro.Path")
-    def test_debian(self, mock_path):
+    def test_debian(self):
         """Test detection of Debian."""
-        mock_os_release = MagicMock()
-        mock_os_release.exists.return_value = True
-        mock_os_release.read_text.return_value = 'ID=debian\nNAME="Debian GNU/Linux"'
-        mock_path.return_value = mock_os_release
-
+        self._set_os_release('ID=debian\nNAME="Debian GNU/Linux"')
         from utils.distro import detect_distro
-        result = detect_distro()
-        self.assertEqual(result, "debian")
+        self.assertEqual(detect_distro(), "debian")
 
-    @patch("utils.distro.Path")
-    def test_ubuntu(self, mock_path):
+    def test_ubuntu(self):
         """Test detection of Ubuntu."""
-        mock_os_release = MagicMock()
-        mock_os_release.exists.return_value = True
-        mock_os_release.read_text.return_value = 'ID=ubuntu\nNAME="Ubuntu"'
-        mock_path.return_value = mock_os_release
-
+        self._set_os_release('ID=ubuntu\nNAME="Ubuntu"')
         from utils.distro import detect_distro
-        result = detect_distro()
-        self.assertEqual(result, "debian")
+        self.assertEqual(detect_distro(), "debian")
 
-    @patch("utils.distro.Path")
-    def test_debian_like(self, mock_path):
+    def test_debian_like(self):
         """Test detection of Debian-like distros (ID_LIKE=debian)."""
-        mock_os_release = MagicMock()
-        mock_os_release.exists.return_value = True
-        mock_os_release.read_text.return_value = 'ID=linuxmint\nID_LIKE=debian'
-        mock_path.return_value = mock_os_release
-
+        self._set_os_release('ID=linuxmint\nID_LIKE=debian')
         from utils.distro import detect_distro
-        result = detect_distro()
-        self.assertEqual(result, "debian")
+        self.assertEqual(detect_distro(), "debian")
 
-    @patch("utils.distro.Path")
-    def test_fedora(self, mock_path):
+    def test_fedora(self):
         """Test detection of Fedora."""
-        mock_os_release = MagicMock()
-        mock_os_release.exists.return_value = True
-        mock_os_release.read_text.return_value = 'ID=fedora\nNAME="Fedora Linux"'
-        mock_path.return_value = mock_os_release
-
+        self._set_os_release('ID=fedora\nNAME="Fedora Linux"')
         from utils.distro import detect_distro
-        result = detect_distro()
-        self.assertEqual(result, "fedora")
+        self.assertEqual(detect_distro(), "fedora")
 
-    @patch("utils.distro.Path")
-    def test_opensuse(self, mock_path):
+    def test_opensuse(self):
         """Test detection of openSUSE."""
-        mock_os_release = MagicMock()
-        mock_os_release.exists.return_value = True
-        mock_os_release.read_text.return_value = 'ID=opensuse\nNAME="openSUSE Tumbleweed"'
-        mock_path.return_value = mock_os_release
-
+        self._set_os_release('ID=opensuse\nNAME="openSUSE Tumbleweed"')
         from utils.distro import detect_distro
-        result = detect_distro()
-        self.assertEqual(result, "suse")
+        self.assertEqual(detect_distro(), "suse")
 
-    @patch("utils.distro.Path")
-    def test_suse(self, mock_path):
+    def test_suse(self):
         """Test detection of SUSE."""
-        mock_os_release = MagicMock()
-        mock_os_release.exists.return_value = True
-        mock_os_release.read_text.return_value = 'ID=suse\nNAME="SUSE Linux"'
-        mock_path.return_value = mock_os_release
-
+        self._set_os_release('ID=suse\nNAME="SUSE Linux"')
         from utils.distro import detect_distro
-        result = detect_distro()
-        self.assertEqual(result, "suse")
+        self.assertEqual(detect_distro(), "suse")
 
-    @patch("utils.distro.Path")
-    def test_unknown_distro(self, mock_path):
+    def test_unknown_distro(self):
         """Test detection of unknown distribution."""
-        mock_os_release = MagicMock()
-        mock_os_release.exists.return_value = True
-        mock_os_release.read_text.return_value = 'ID=centos\nNAME="CentOS Linux"'
-        mock_path.return_value = mock_os_release
-
+        self._set_os_release('ID=centos\nNAME="CentOS Linux"')
         from utils.distro import detect_distro
-        result = detect_distro()
-        self.assertEqual(result, "unknown")
+        self.assertEqual(detect_distro(), "unknown")
 
-    @patch("utils.distro.Path")
-    def test_no_os_release(self, mock_path):
+    def test_no_os_release(self):
         """Test when /etc/os-release does not exist."""
         mock_os_release = MagicMock()
         mock_os_release.exists.return_value = False
-        mock_path.return_value = mock_os_release
+        self.mock_path.return_value = mock_os_release
+        from utils.distro import detect_distro
+        self.assertEqual(detect_distro(), "unknown")
 
+    def test_archcraft_not_arch(self):
+        """ID=archcraft alone should NOT match as arch (regression test)."""
+        self._set_os_release('ID=archcraft\nNAME="ArchCraft"')
+        from utils.distro import detect_distro
+        self.assertEqual(detect_distro(), "unknown")
+
+    def test_archcraft_with_arch_id_like(self):
+        """ID=archcraft with ID_LIKE=arch should match as arch."""
+        self._set_os_release('ID=archcraft\nID_LIKE=arch')
+        from utils.distro import detect_distro
+        self.assertEqual(detect_distro(), "arch")
+
+    def test_opensuse_tumbleweed(self):
+        """ID=opensuse-tumbleweed should match as suse."""
+        self._set_os_release('ID=opensuse-tumbleweed')
+        from utils.distro import detect_distro
+        self.assertEqual(detect_distro(), "suse")
+
+
+class TestDetectDistroWindows(TestCase):
+    """Test detect_distro() function on Windows."""
+
+    @patch("utils.distro.detect_platform", return_value="windows")
+    def test_windows_returns_windows(self, mock_platform):
+        """Test that Windows platform returns 'windows' distro."""
         from utils.distro import detect_distro
         result = detect_distro()
-        self.assertEqual(result, "unknown")
+        self.assertEqual(result, "windows")
+
+
+class TestDetectDistroMacOS(TestCase):
+    """Test detect_distro() function on macOS."""
+
+    @patch("utils.distro.detect_platform", return_value="macos")
+    def test_macos_returns_macos(self, mock_platform):
+        """Test that macOS platform returns 'macos' distro."""
+        from utils.distro import detect_distro
+        result = detect_distro()
+        self.assertEqual(result, "macos")
 
 
 def run_tests():

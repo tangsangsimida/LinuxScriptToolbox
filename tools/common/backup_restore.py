@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 from tools.base import Tool
+from . import backup_restore_translations  # noqa: F401 - side-effect import for i18n registration
 from utils.i18n import t
 from utils.sudo_utils import copy_file
 from utils.ui import print_success, print_error, print_info, print_warning, confirm, console, prompt_selection, BACK_ACTION
@@ -196,3 +197,19 @@ class BackupRestore(Tool):
 
         print_error(t("ui.invalid_selection"))
         return False
+
+
+    def run_dry(self) -> str | None:
+        """Preview which system files would be backed up."""
+        files = ["/etc/fstab", "/etc/default/grub", "/etc/ssh/sshd_config", "/etc/sysctl.conf"]
+        existing, missing = [], []
+        for f in files:
+            (existing if Path(f).exists() else missing).append(f)
+        lines = ["[DRY-RUN] Backup/Restore would:", ""]
+        for f in existing:
+            lines.append(f"  Would backup: {f}")
+        for f in missing:
+            lines.append(f"  Not found (skip): {f}")
+        lines.append("")
+        lines.append("  Destination: ~/.config/linuxscripttoolbox/backups/<timestamp>/")
+        return "\n".join(lines)

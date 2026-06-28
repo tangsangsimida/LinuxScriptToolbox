@@ -7,5 +7,14 @@ config.json
 .venv/
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+.codegraph/
+*.egg-info/
+dist/
+build/
+.env
+*.log
+.DS_Store
+Thumbs.db
 tests/test_config.py
 tests/test_config.sh

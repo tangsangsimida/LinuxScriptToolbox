@@ -1,0 +1,53 @@
+"""System info tool translations / 系统信息工具翻译."""
+
+from utils.i18n import register_translations
+
+register_translations("en", {
+    "msg.info_all": "All Information",
+    "msg.info_all_desc": "Display all system information",
+    "msg.info_disk": "Disk Usage",
+    "msg.info_disk_desc": "Display disk usage and largest directories",
+    "msg.info_disk_home": "Largest directories in home:",
+    "msg.info_disk_running": "Disk Usage:",
+    "msg.info_hardware": "Hardware Overview",
+    "msg.info_hardware_desc": "Display CPU, memory, and GPU information",
+    "msg.info_hardware_running": "Hardware Information:",
+    "msg.info_network": "Network Status",
+    "msg.info_network_connections": "Active connections:",
+    "msg.info_network_desc": "Display IP addresses, DNS, and connections",
+    "msg.info_network_running": "Network Status:",
+    "msg.info_select": "Select information to display:",
+    "msg.info_services": "Services Status",
+    "msg.info_services_count": "Running services: {count}",
+    "msg.info_services_desc": "Display running services and recent errors",
+    "msg.info_services_failed": "Failed services:",
+    "msg.info_services_recent_errors": "Recent errors:",
+    "msg.info_services_running": "Services Status:",
+    "tool.system-info.description": "Display hardware overview, disk usage, network status, and services",
+    "tool.system-info.display_name": "System Info",
+})
+
+register_translations("zh", {
+    "msg.info_all": "全部信息",
+    "msg.info_all_desc": "显示所有系统信息",
+    "msg.info_disk": "磁盘使用",
+    "msg.info_disk_desc": "显示磁盘使用和最大目录",
+    "msg.info_disk_home": "主目录中最大的目录：",
+    "msg.info_disk_running": "磁盘使用：",
+    "msg.info_hardware": "硬件概览",
+    "msg.info_hardware_desc": "显示 CPU、内存和 GPU 信息",
+    "msg.info_hardware_running": "硬件信息：",
+    "msg.info_network": "网络状态",
+    "msg.info_network_connections": "活动连接：",
+    "msg.info_network_desc": "显示 IP 地址、DNS 和连接",
+    "msg.info_network_running": "网络状态：",
+    "msg.info_select": "选择要显示的信息：",
+    "msg.info_services": "服务状态",
+    "msg.info_services_count": "运行中的服务：{count}",
+    "msg.info_services_desc": "显示运行中的服务和最近错误",
+    "msg.info_services_failed": "失败的服务：",
+    "msg.info_services_recent_errors": "最近错误：",
+    "msg.info_services_running": "服务状态：",
+    "tool.system-info.description": "显示硬件概览、磁盘使用、网络状态和服务状态",
+    "tool.system-info.display_name": "系统信息",
+})
