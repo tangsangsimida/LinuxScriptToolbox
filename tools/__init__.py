@@ -82,19 +82,28 @@ def get_tools_for_platform(platform: str) -> list[Tool]:
     return [t for t in TOOLS if platform in t.platforms]
 
 
-def get_tools(distro: str, platform: str) -> list[Tool]:
-    """Filter tools by both distro and platform.
+def get_tools(distro: str | None = None, platform: str | None = None) -> list[Tool]:
+    """Filter tools by distro and/or platform.
 
-    按发行版和平台同时过滤工具。
+    按发行版和/或平台过滤工具。
+
+    Both parameters are optional. When provided, a tool must match ALL
+    specified criteria to be included. When both are None, all tools are returned.
+
+    两个参数均为可选。提供时，工具必须匹配所有指定条件才会被包含。
+    两者都为 None 时返回所有工具。
 
     Args:
-        distro: Distribution identifier / 发行版标识符
-        platform: Platform identifier / 平台标识符
+        distro: Distribution identifier, or None to skip distro filtering
+                / 发行版标识符，或 None 跳过发行版过滤
+        platform: Platform identifier, or None to skip platform filtering
+                  / 平台标识符，或 None 跳过平台过滤
 
     Returns:
-        List of tools matching both criteria / 同时满足两个条件的工具列表
+        List of tools matching the criteria / 满足条件的工具列表
     """
     return [
         t for t in TOOLS
-        if distro in t.distros and platform in t.platforms
+        if (distro is None or distro in t.distros)
+        and (platform is None or platform in t.platforms)
     ]

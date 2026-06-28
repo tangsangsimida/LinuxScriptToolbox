@@ -82,7 +82,7 @@ def find_tool(name: str, distro: str = None, platform: str = None):
     Returns:
         Tool instance if found, None otherwise / 找到则返回 Tool 实例，否则返回 None
     """
-    tools = get_tools(distro, platform) if distro and platform else TOOLS
+    tools = get_tools(distro, platform) if distro or platform else TOOLS
     for tool in tools:
         if tool.name == name:
             return tool

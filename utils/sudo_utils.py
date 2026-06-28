@@ -12,6 +12,7 @@ On Windows: uses PowerShell Start-Process -Verb RunAs for admin elevation.
 import os
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 from utils.platform import IS_WINDOWS
@@ -133,20 +134,56 @@ def _read_file_with_sudo(path: Path) -> bytes:
     return proc.stdout
 
 
+def _ps_quote_arg(arg: str) -> str:
+    """Quote a single argument for PowerShell Start-Process -ArgumentList.
+
+    为 PowerShell Start-Process -ArgumentList 引用单个参数。
+
+    PowerShell uses double quotes for quoting; embedded double quotes and
+    dollar signs must be escaped with backticks.
+
+    PowerShell 使用双引号进行引用；嵌入的双引号和美元符号需要用反引号转义。
+
+    Args:
+        arg: Argument to quote / 要引用的参数
+
+    Returns:
+        Quoted argument string / 引用后的参数字符串
+    """
+    return '"' + arg.replace('"', '`"').replace("$", "`$") + '"'
+
+
 def _run_elevated_win(cmd: list[str], stdin_data: str | None = None) -> None:
     """Run a command with admin privileges on Windows via PowerShell.
 
     在 Windows 上通过 PowerShell 以管理员权限运行命令。
 
+    Note: stdin_data is not supported on Windows elevation because
+    Start-Process -Verb RunAs launches a new process that cannot
+    inherit stdin from the parent. A RuntimeError is raised if
+    stdin_data is provided.
+
+    注意：Windows 权限提升不支持 stdin_data，因为 Start-Process -Verb RunAs
+    启动的新进程无法继承父进程的 stdin。如果提供了 stdin_data 将抛出 RuntimeError。
+
     Args:
         cmd: Command and arguments / 命令及参数
-        stdin_data: Optional stdin input / 可选的 stdin 输入
+        stdin_data: Optional stdin input (unsupported on Windows) / 可选的 stdin 输入（Windows 不支持）
+
+    Raises:
+        RuntimeError: If stdin_data is provided on Windows / 在 Windows 上提供 stdin_data 时
+        subprocess.CalledProcessError: If the command fails / 命令执行失败时
     """
+    if stdin_data is not None:
+        raise RuntimeError(
+            "stdin_data is not supported for elevated Windows commands "
+            "because Start-Process -Verb RunAs cannot inherit stdin"
+        )
     win_shell = get_windows_shell_cmd()
-    ps_cmd = f"Start-Process -FilePath '{cmd[0]}' -ArgumentList {cmd[1:] if len(cmd) > 1 else ''} -Verb RunAs -Wait"
+    ps_args = ", ".join(_ps_quote_arg(a) for a in cmd[1:]) if len(cmd) > 1 else "''"
+    ps_cmd = f"Start-Process -FilePath '{cmd[0]}' -ArgumentList {ps_args} -Verb RunAs -Wait"
     result = subprocess.run(
         [win_shell, "-Command", ps_cmd],
-        input=stdin_data,
         capture_output=True,
         text=True,
     )
@@ -224,16 +261,28 @@ def write_file(path: str | Path, content: str) -> None:
     path = Path(path)
     if need_sudo(path):
         if IS_WINDOWS:
-            # On Windows, use PowerShell to write with elevation
-            # 在 Windows 上使用 PowerShell 提升权限写入
-            escaped_content = content.replace("'", "''")
-            win_shell = get_windows_shell_cmd()
-            ps_cmd = f"Set-Content -Path '{path}' -Value '{escaped_content}' -Force"
-            subprocess.run(
-                [win_shell, "-Command", ps_cmd],
-                check=True,
-                capture_output=True,
-            )
+            # Write to a temp file first, then use elevated PowerShell to copy to destination.
+            # This avoids embedding content in the command string (unsafe for large/special content).
+            # 先写入临时文件，再用提升权限的 PowerShell 复制到目标。
+            # 避免将内容嵌入命令字符串（对大文件/特殊字符不安全）。
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".tmp", delete=False) as tmp:
+                tmp.write(content)
+                tmp_path = tmp.name
+            try:
+                win_shell = get_windows_shell_cmd()
+                inner_cmd = f"Copy-Item -Path {_ps_quote_arg(tmp_path)} -Destination {_ps_quote_arg(str(path))} -Force"
+                ps_cmd = (
+                    f"Start-Process -FilePath {_ps_quote_arg(win_shell)} "
+                    f"-ArgumentList {_ps_quote_arg('-Command')}, {_ps_quote_arg(inner_cmd)} "
+                    f"-Verb RunAs -Wait"
+                )
+                subprocess.run(
+                    [win_shell, "-Command", ps_cmd],
+                    check=True,
+                    capture_output=True,
+                )
+            finally:
+                Path(tmp_path).unlink(missing_ok=True)
         else:
             # Use sudo tee to write with elevated privileges
             # 使用 sudo tee 以提升权限写入
@@ -266,10 +315,14 @@ def copy_file(src: str | Path, dst: str | Path) -> None:
     if need_sudo(dst):
         if IS_WINDOWS:
             win_shell = get_windows_shell_cmd()
-            # On Windows, use PowerShell for elevated copy
-            # 在 Windows 上使用 PowerShell 进行提升权限复制
+            inner_cmd = f"Copy-Item -Path {_ps_quote_arg(str(src))} -Destination {_ps_quote_arg(str(dst))} -Force"
+            ps_cmd = (
+                f"Start-Process -FilePath {_ps_quote_arg(win_shell)} "
+                f"-ArgumentList {_ps_quote_arg('-Command')}, {_ps_quote_arg(inner_cmd)} "
+                f"-Verb RunAs -Wait"
+            )
             subprocess.run(
-                [win_shell, "-Command", f"Copy-Item -Path '{src}' -Destination '{dst}' -Force"],
+                [win_shell, "-Command", ps_cmd],
                 check=True,
                 capture_output=True,
             )

@@ -157,7 +157,7 @@ class TestGetToolsForPlatform(TestCase):
 
 
 class TestGetTools(TestCase):
-    """Test get_tools() function with both distro and platform filtering."""
+    """Test get_tools() function with distro and/or platform filtering."""
 
     def test_linux_arch(self):
         """Test filtering for Linux Arch."""
@@ -183,6 +183,42 @@ class TestGetTools(TestCase):
         # nonexistent distro + nonexistent platform should return nothing
         tools = get_tools("nonexistent_distro_xyz", "nonexistent_platform_xyz")
         self.assertEqual(len(tools), 0)
+
+    def test_distro_only_filter(self):
+        """Test filtering by distro only (platform=None)."""
+        from tools import get_tools
+        tools = get_tools(distro="arch")
+        self.assertGreater(len(tools), 0)
+        for tool in tools:
+            self.assertIn("arch", tool.distros)
+
+    def test_platform_only_filter(self):
+        """Test filtering by platform only (distro=None)."""
+        from tools import get_tools
+        tools = get_tools(platform="linux")
+        self.assertGreater(len(tools), 0)
+        for tool in tools:
+            self.assertIn("linux", tool.platforms)
+
+    def test_no_filter_returns_all(self):
+        """Test that get_tools() with no args returns all tools."""
+        from tools import get_tools, TOOLS
+        tools = get_tools()
+        self.assertEqual(len(tools), len(TOOLS))
+
+    def test_distro_only_excludes_non_matching(self):
+        """Test that distro-only filter excludes tools without that distro."""
+        from tools import get_tools
+        tools = get_tools(distro="arch")
+        for tool in tools:
+            self.assertIn("arch", tool.distros)
+
+    def test_platform_only_excludes_non_matching(self):
+        """Test that platform-only filter excludes tools without that platform."""
+        from tools import get_tools
+        tools = get_tools(platform="windows")
+        for tool in tools:
+            self.assertIn("windows", tool.platforms)
 
 
 def run_tests():
