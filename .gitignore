@@ -18,3 +18,4 @@ build/
 Thumbs.db
 tests/test_config.py
 tests/test_config.sh
+.mimocode/*

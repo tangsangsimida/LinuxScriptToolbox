@@ -29,6 +29,7 @@ TOOLCHAIN_OPTIONS = [
         "arch_pkgs": ["riscv64-elf-gcc", "riscv64-elf-newlib"],
         "debian_pkgs": ["gcc-riscv64-linux-gnu", "gdb-multiarch"],
         "fedora_pkgs": ["gcc-riscv64-linux-gnu", "gdb-multiarch"],
+        "alinux_pkgs": ["gcc-riscv64-linux-gnu"],  # alinux (RHEL/EPEL) lacks gdb-multiarch / 阿里云 Linux 缺少 gdb-multiarch
         "suse_pkgs": ["riscv64-linux-gnu-gcc", "gdb-multiarch"],
     },
     {
@@ -97,7 +98,7 @@ class DevToolsSetup(Tool):
         if distro == "arch":
             pkgs = option.get("arch_pkgs", [])
         elif distro in ("fedora", "alinux"):  # alinux = RHEL family, dnf / 阿里云 Linux = RHEL 系，使用 dnf
-            pkgs = option.get("fedora_pkgs", option.get("debian_pkgs", []))
+            pkgs = option.get("alinux_pkgs", option.get("fedora_pkgs", option.get("debian_pkgs", [])))
         elif distro == "suse":
             pkgs = option.get("suse_pkgs", option.get("debian_pkgs", []))
         else:
