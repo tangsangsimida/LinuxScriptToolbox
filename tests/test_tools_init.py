@@ -60,29 +60,35 @@ class TestToolDiscovery(TestCase):
             self.assertFalse(tool.mutates_system, f"{tool.name} mutates system but is run-all safe")
 
 
-class TestGetToolsForDistro(TestCase):
-    """Test get_tools_for_distro() function."""
+class TestGetToolsByDistro(TestCase):
+    """Test get_tools(distro=...) filtering.
+
+    Use the unified get_tools() API rather than the deprecated
+    get_tools_for_distro() so DeprecationWarning does not pollute test output.
+    使用统一的 get_tools() API，替代已废弃的 get_tools_for_distro()，
+    避免测试输出中出现 DeprecationWarning。
+    """
 
     def test_arch_tools(self):
         """Test filtering tools for Arch Linux."""
-        from tools import get_tools_for_distro
-        arch_tools = get_tools_for_distro("arch")
+        from tools import get_tools
+        arch_tools = get_tools(distro="arch")
         self.assertGreater(len(arch_tools), 0)
         for tool in arch_tools:
             self.assertIn("arch", tool.distros)
 
     def test_debian_tools(self):
         """Test filtering tools for Debian."""
-        from tools import get_tools_for_distro
-        debian_tools = get_tools_for_distro("debian")
+        from tools import get_tools
+        debian_tools = get_tools(distro="debian")
         self.assertGreater(len(debian_tools), 0)
         for tool in debian_tools:
             self.assertIn("debian", tool.distros)
 
     def test_fedora_tools(self):
         """Test filtering tools for Fedora."""
-        from tools import get_tools_for_distro
-        fedora_tools = get_tools_for_distro("fedora")
+        from tools import get_tools
+        fedora_tools = get_tools(distro="fedora")
         # Fedora should have at least mirror-optimizer and ai-cli-setup
         self.assertGreater(len(fedora_tools), 0)
         for tool in fedora_tools:
@@ -90,8 +96,8 @@ class TestGetToolsForDistro(TestCase):
 
     def test_unknown_distro_tools(self):
         """Test filtering tools for unknown distro."""
-        from tools import get_tools_for_distro
-        unknown_tools = get_tools_for_distro("unknown")
+        from tools import get_tools
+        unknown_tools = get_tools(distro="unknown")
         # Should have at least mirror-optimizer and ai-cli-setup
         self.assertGreater(len(unknown_tools), 0)
         for tool in unknown_tools:
@@ -99,8 +105,8 @@ class TestGetToolsForDistro(TestCase):
 
     def test_nonexistent_distro_returns_empty(self):
         """Test that nonexistent distro returns empty list."""
-        from tools import get_tools_for_distro
-        result = get_tools_for_distro("nonexistent_distro_xyz")
+        from tools import get_tools
+        result = get_tools(distro="nonexistent_distro_xyz")
         self.assertEqual(len(result), 0)
 
 
