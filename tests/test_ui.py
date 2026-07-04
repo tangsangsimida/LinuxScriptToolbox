@@ -102,6 +102,39 @@ class TestConfirm(TestCase):
         self.assertFalse(result)
 
 
+# Regression: ISSUE-019. ask() must not crash with EOFError when stdin is
+# piped (non-TTY) and the stream ends. It should return "" so callers like
+# quick-fixes' _fix_stm32cubemx_wayland can detect "no input available"
+# and abort cleanly.
+class TestAskNonTTY(TestCase):
+
+    @patch("utils.ui.IS_TTY", False)
+    @patch("builtins.input", return_value="")
+    def test_ask_non_tty_empty_input_returns_empty(self, mock_input):
+        from utils.ui import ask
+        self.assertEqual(ask("Enter path:"), "")
+
+    @patch("utils.ui.IS_TTY", False)
+    @patch("builtins.input", return_value="/opt/stm32cubemx")
+    def test_ask_non_tty_returns_stripped_user_input(self, mock_input):
+        from utils.ui import ask
+        self.assertEqual(ask("Enter path:"), "/opt/stm32cubemx")
+
+    @patch("utils.ui.IS_TTY", False)
+    @patch("builtins.input", side_effect=EOFError)
+    def test_ask_non_tty_eof_returns_empty(self, mock_input):
+        # The original bug: ask() crashed with EOFError when stdin ended
+        # mid-prompt, taking down the whole main.py entry point.
+        from utils.ui import ask
+        self.assertEqual(ask("Enter path:"), "")
+
+    @patch("utils.ui.IS_TTY", False)
+    @patch("builtins.input", side_effect=KeyboardInterrupt)
+    def test_ask_non_tty_keyboard_interrupt_returns_empty(self, mock_input):
+        from utils.ui import ask
+        self.assertEqual(ask("Enter path:"), "")
+
+
 # Test select_option() function
 class TestSelectOption(TestCase):
 
