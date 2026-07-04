@@ -252,9 +252,11 @@ def package_is_installed(package: str, distro: str) -> bool:
 
     if distro == "arch":
         code, _ = run_cmd(["pacman", "-Qi", package])
-    elif distro in ("fedora", "suse"):
+    elif distro in ("fedora", "suse", "alinux", "unknown"):
         code, _ = run_cmd(["rpm", "-q", package])
     else:
+        # Debian-based family (debian, ubuntu, linuxmint, …)
+        # Debian 系（debian、ubuntu、linuxmint 等）
         code, _ = run_cmd(["dpkg", "-s", package])
     return code == 0
 
