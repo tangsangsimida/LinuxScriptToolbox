@@ -345,7 +345,7 @@ def _generate_preview() -> str:
         "python-alias", "connection-info",
     ]
     for i, step_id in enumerate(preview_steps, 1):
-        opt = next(o for o in INIT_OPTIONS if o["id"] == step_id)
+        opt = next(o for o in INIT_OPTIONS if o.get("type") != "separator" and o["id"] == step_id)
         lines.append(f"  {i}. {t(opt['name_key'])}")
     lines.append("")
     lines.append(t("msg.init_preview_files"))
