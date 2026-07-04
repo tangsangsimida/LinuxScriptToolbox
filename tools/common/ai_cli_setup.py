@@ -56,6 +56,7 @@ DISTRO_NODEJS_PKGS = {  # Node.js package names mapped by distro family / 按发
     "arch": ["nodejs", "npm"],    # Arch Linux packages / Arch Linux 包名
     "debian": ["nodejs", "npm"],  # Debian/Ubuntu packages / Debian/Ubuntu 包名
     "fedora": ["nodejs", "npm"],  # Fedora packages / Fedora 包名
+    "alinux": ["nodejs", "npm"],  # Alibaba Cloud Linux / RHEL family (dnf) / 阿里云 Linux / RHEL 系（dnf）
     "suse": ["nodejs", "npm"],    # openSUSE packages / openSUSE 包名
 }
 
@@ -151,14 +152,23 @@ def _is_npm_package_installed(package: str) -> bool:
 # Install an npm package globally.
 #
 # 全局安装指定的 npm 包。
-
+#
+# Prefixes the command with sudo (matching packages_install) so the install
+# succeeds on default Linux distros where /usr/local/lib/node_modules is
+# root-owned. Password is supplied via LST_SUDO_PASSWORD when set; otherwise
+# the call relies on NOPASSWD sudoers or an interactive terminal.
+# 命令前加 sudo（与 packages_install 保持一致），以便在默认 Linux 发行版上
+# /usr/local/lib/node_modules 属 root 时安装成功。密码通过 LST_SUDO_PASSWORD
+# 注入；未设置时依赖 sudoers NOPASSWD 或交互终端。
 def _install_npm_package(package: str, display_name: str) -> bool:
     if _is_npm_package_installed(package):  # Skip if already installed / 如果已安装则跳过
         print_info(t("msg.ai_cli_already_installed", name=display_name))
         return True
 
     print_info(t("msg.ai_cli_installing", package=package))
-    code = run_verbose(["npm", "install", "-g", package])  # Install globally via npm / 通过 npm 全局安装
+    cmd = (["sudo", "npm", "install", "-g", package]
+           if not IS_WINDOWS else ["npm", "install", "-g", package])
+    code = run_verbose(cmd)  # Install globally via npm (sudo on Linux) / 通过 npm 全局安装（Linux 上加 sudo）
     if code != 0:
         print_error(t("msg.ai_cli_install_failed", name=display_name))
         return False
@@ -170,14 +180,15 @@ def _install_npm_package(package: str, display_name: str) -> bool:
 # Update a globally installed npm package to latest version.
 #
 # 将全局安装的 npm 包更新到最新版本。
-
 def _update_npm_package(package: str, display_name: str) -> bool:
     if not _is_npm_package_installed(package):  # Cannot update what is not installed / 未安装则无法更新
         print_info(t("msg.ai_cli_not_installed", name=display_name))
         return False
 
     print_info(t("msg.ai_cli_updating", package=package))
-    code = run_verbose(["npm", "install", "-g", f"{package}@latest"])  # Reinstall with @latest tag / 使用 @latest 标签重新安装
+    cmd = (["sudo", "npm", "install", "-g", f"{package}@latest"]
+           if not IS_WINDOWS else ["npm", "install", "-g", f"{package}@latest"])
+    code = run_verbose(cmd)  # Reinstall with @latest tag (sudo on Linux) / 使用 @latest 标签重新安装（Linux 上加 sudo）
     if code != 0:
         print_error(t("msg.ai_cli_update_failed", name=display_name))
         return False
@@ -245,7 +256,7 @@ class AiCliSetup(Tool):
     name = "ai-cli-setup"  # Tool identifier / 工具标识符
     display_name = "AI CLI Setup"  # Human-readable display name / 人类可读的显示名称
     description = "One-click install AI coding assistant CLIs (Claude Code, Codex, Gemini, OpenCode, MiMo)"  # Tool description / 工具描述
-    distros = ["arch", "debian", "fedora", "suse", "unknown", "windows"]  # Supported distros / 支持的发行版列表
+    distros = ["arch", "debian", "fedora", "suse", "alinux", "unknown", "windows"]  # Supported distros / 支持的发行版列表
     platforms = ["linux", "windows"]  # Supported platforms / 支持的平台列表
     group = "dev"  # Menu group / 菜单分组
     requires_network = True  # Needs internet access / 需要网络连接
