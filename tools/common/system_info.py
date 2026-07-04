@@ -136,7 +136,11 @@ def _show_disk() -> bool:
 
     # Largest directories in home / 主目录中最大的目录
     print_info(t("msg.info_disk_home"))
-    code, home_usage = run_cmd(["du", "-sh", "--max-depth=1", str(Path.home())])
+    # NOTE: `-s` (summarize) is mutually exclusive with `--max-depth=1` and
+    # causes du to exit 1 with no output on real systems. Use `-h` only.
+    # 注意：-s（汇总）与 --max-depth=1 互斥，会让 du 在真实系统上返回
+    # 退出码 1 且无输出。改用纯 -h。
+    code, home_usage = run_cmd(["du", "-h", "--max-depth=1", str(Path.home())])
     if code == 0 and home_usage:
         lines = home_usage.strip().split("\n")
         lines.sort(reverse=True)
