@@ -22,8 +22,6 @@ class TestGeneratePreview(TestCase):
         result = _generate_preview()
         self.assertIsInstance(result, str)
         self.assertGreater(len(result), 0)
-        # Should contain preview header text (either en or zh depending on env)
-        self.assertIn("Preview", result) if "Preview" in result or "打印" in result else True
 
     def test_generate_preview_contains_ssh_service_steps(self):
         result = _generate_preview()
@@ -33,7 +31,7 @@ class TestGeneratePreview(TestCase):
     def test_generate_preview_contains_preview_header(self):
         result = _generate_preview()
         self.assertTrue(
-            "Preview" in result or "SSH setup" in result,
+            "Preview" in result or "完整 SSH" in result,
             f"Expected header in preview, got: {result[:80]}",
         )
 

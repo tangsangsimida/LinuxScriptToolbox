@@ -235,14 +235,46 @@ FEDORA_MIRROR = f"https://{CHINA_MIRROR_HOSTS[0]}/fedora"
 # / 禁用文件可避免改写没有有效 baseurl/mirrorlist 的文件。
 REPO_EXCLUDE_GLOBS = ["*example*", "*disabled*", "*.rpmnew", "*.rpmsave", "*.bak"]
 
+# Third-party .repo files in FEDORA_REPO_DIR that must NOT have their baseurl
+# rewritten.  These point at external repos (Tailscale, Docker, etc.) that
+# have no China mirror equivalent and would become 404 if redirected.
+# 禁止改写 baseurl 的第三方 .repo 文件。这些指向外部仓库（Tailscale、Docker
+# 等），没有中国镜像等价物，重定向后会 404。
+REPO_EXCLUDE_BASEURL_FILES = {
+    # Tailscale — pkgs.tailscale.com/stable/fedora/… unique repos / 仓库
+    "tailscale.repo", "tailscale-stable.repo", "tailscale-unstable.repo",
+    # Docker CE — mirrors may exist but path structure differs / Docker — 镜像路径不同
+    "docker-ce.repo",
+    # Google / 谷歌
+    "google-chrome.repo", "google-cloud-sdk.repo",
+    # Microsoft / 微软
+    "microsoft-edge.repo", "microsoft-vscode.repo", "teams.repo",
+    # Grafana / Grafana
+    "grafana.repo", "influxdb.repo",
+    # PostgreSQL — upstream RPM repo / PG 上游 RPM 仓库
+    "pgdg.repo", "pgdg-common.repo",
+    # NodeSource — Node.js / NodeSource — Node.js
+    "nodesource.repo",
+    # MariaDB / MariaDB
+    "mariadb.repo",
+    # RPM Fusion — multimedia codecs / RPM Fusion — 多媒体编解码器
+    "rpmfusion-free.repo", "rpmfusion-nonfree.repo",
+    # EPEL (we only fix its baseurl if the repo file name starts with epel,
+    # which is already matched by the official repo handling below)
+    # EPEL — 已含在通配排除中
+}
+
 
 # Return the list of .repo files under FEDORA_REPO_DIR that the optimizer
-# will rewrite, sorted, after applying the exclude patterns.
-# 返回 FEDORA_REPO_DIR 下优化器会改写的 .repo 文件列表（已排除占位文件，已排序）。
+# will rewrite, sorted, after applying the exclude globs and known third-party
+# file-name excludes.
+# 返回 FEDORA_REPO_DIR 下优化器会改写的 .repo 文件列表（已排除占位/禁用文件
+# 和已知的第三方仓库文件，已排序）。
 def _list_fedora_repo_files() -> list[Path]:
     return [
         p for p in sorted(FEDORA_REPO_DIR.glob("*.repo"))
         if not any(p.match(g) for g in REPO_EXCLUDE_GLOBS)
+        and p.name not in REPO_EXCLUDE_BASEURL_FILES
     ]
 
 
