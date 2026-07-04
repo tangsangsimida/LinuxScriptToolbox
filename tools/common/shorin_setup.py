@@ -99,7 +99,7 @@ class ShorinSetup(Tool):
             shutil.rmtree(SHORIN_DIR)
 
         print_info(t("msg.cloning", repo="shorin-arch-setup"))
-        code = run_verbose(["git", "clone", "--depth", "1", SHORIN_REPO, str(SHORIN_DIR)])
+        code = run_verbose(["git", "clone", "--depth", "1", SHORIN_REPO, str(SHORIN_DIR)], timeout=60)
         if code != 0:
             print_error(t("msg.clone_failed", repo="shorin-arch-setup"))
             return False
