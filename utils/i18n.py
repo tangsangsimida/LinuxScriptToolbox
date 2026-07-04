@@ -32,6 +32,10 @@ CONFIG_PATH = Path(__file__).parent.parent / "config.json"
 # Map of supported language codes to display names / 支持的语言代码到显示名称的映射
 SUPPORTED_LANGS = {"en": "English", "zh": "中文"}
 
+# Default language when config is missing, corrupt, or holds an unknown code.
+# 配置缺失、损坏或包含未知语言代码时使用的默认语言。
+DEFAULT_LANG = "en"
+
 TRANSLATIONS: dict[str, dict[str, str]] = {
     "en": {
         # ============================================================
@@ -166,13 +170,23 @@ _current_lang: str | None = None
 #
 # 加载项目配置文件并以字典形式返回其内容。
 #
+# This function is intentionally fault-tolerant: any error reading or parsing
+# config.json (corrupt JSON, wrong root type, OSError) yields an empty dict
+# so that downstream code can keep running with default values.
+# 此函数刻意容错：读取或解析 config.json 的任何错误（JSON 损坏、根类型错误、
+# OSError）都返回空字典，使下游代码可以继续以默认值运行。
+#
 # Returns:
-#     dict: Parsed config dict, or empty dict if the file does not exist.
-#     解析后的配置字典，如果文件不存在则返回空字典。
+#     dict: Parsed config dict, or empty dict on any error.
+#     解析后的配置字典，任何错误时返回空字典。
 def _load_config() -> dict:
-    if CONFIG_PATH.exists():
-        return json.loads(CONFIG_PATH.read_text())
-    return {}
+    if not CONFIG_PATH.exists():
+        return {}
+    try:
+        data = json.loads(CONFIG_PATH.read_text())
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 # Save the given config dict to the project config file as pretty-printed JSON.
@@ -189,6 +203,13 @@ def _save_config(cfg: dict) -> None:
 #
 # 获取当前语言代码，首次调用时从配置文件加载。
 #
+# The lang field is validated against SUPPORTED_LANGS; a missing/unknown
+# value falls back to DEFAULT_LANG so a corrupt config can never crash the
+# caller. Once _current_lang is set, subsequent calls bypass the config.
+# lang 字段会对照 SUPPORTED_LANGS 校验；缺失或未知值回退到 DEFAULT_LANG，
+# 这样损坏的配置永远不会让调用方崩溃。_current_lang 一旦设置，后续调用
+# 直接返回，不再读 config。
+#
 # Returns:
 #     str: Two-letter language code (e.g. "en", "zh").
 #     两位语言代码（如 "en"、"zh"）。
@@ -197,7 +218,10 @@ def get_lang() -> str:
     # Lazy-load: only read config on the first call to avoid repeated file I/O / 延迟加载：仅在首次调用时读取配置，避免重复文件 I/O
     if _current_lang is None:
         cfg = _load_config()
-        _current_lang = cfg.get("lang", "en")
+        candidate = cfg.get("lang", DEFAULT_LANG)
+        if not isinstance(candidate, str) or candidate not in SUPPORTED_LANGS:
+            candidate = DEFAULT_LANG
+        _current_lang = candidate
     return _current_lang
 
 
@@ -205,12 +229,22 @@ def get_lang() -> str:
 #
 # 设置当前语言并将选择持久化到 config.json。
 #
+# Invalid language values are silently coerced to DEFAULT_LANG rather than
+# crashing, so an external caller passing a bad value can't break the rest
+# of the program. _load_config() is itself fault-tolerant, so this also
+# self-heals any prior corruption on the next save.
+# 无效的语言值会静默回退到 DEFAULT_LANG 而不是崩溃，外部调用方传入错误值
+# 不会破坏程序其余部分。_load_config() 自身已容错，下次保存时会自动
+# 覆盖修复先前的损坏。
+#
 # Args:
 #     lang: Two-letter language code (e.g. "en", "zh"). / 两位语言代码（如 "en"、"zh"）。
 def set_lang(lang: str) -> None:
     global _current_lang
+    if not isinstance(lang, str) or lang not in SUPPORTED_LANGS:
+        lang = DEFAULT_LANG
     _current_lang = lang
-    cfg = _load_config()
+    cfg = _load_config()  # Always returns dict (fault-tolerant). / 始终返回 dict（已容错）
     cfg["lang"] = lang
     _save_config(cfg)
 
