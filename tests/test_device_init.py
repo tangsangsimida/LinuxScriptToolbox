@@ -15,7 +15,16 @@ class TestGeneratePreview(TestCase):
     """Regression: ISSUE-027. Separator entries in INIT_OPTIONS lack an 'id'
     key, causing _generate_preview() to crash with KeyError when it iterates
     the options list looking up each step_id.
+
+    Note: setUp explicitly sets i18n to English so assertions on the preview
+    text are deterministic regardless of the runtime env's config.json.
+    注意：setUp 显式设置 i18n 为英文，使预览文本的断言不受运行环境
+    config.json 语言设置影响。
     """
+
+    def setUp(self):
+        from utils.i18n import set_lang
+        set_lang("en")
 
     def test_generate_preview_does_not_crash_on_separators(self):
         # Should produce a string with step numbers and NOT crash
@@ -31,7 +40,7 @@ class TestGeneratePreview(TestCase):
     def test_generate_preview_contains_preview_header(self):
         result = _generate_preview()
         self.assertTrue(
-            "Preview" in result or "完整 SSH" in result,
+            "DRY-RUN" in result or "Preview" in result,
             f"Expected header in preview, got: {result[:80]}",
         )
 
