@@ -4,7 +4,6 @@
 import sys
 from pathlib import Path
 from unittest import TestCase, main as unittest_main
-from unittest.mock import patch
 
 PROJECT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
