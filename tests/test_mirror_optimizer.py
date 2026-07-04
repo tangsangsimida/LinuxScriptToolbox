@@ -160,5 +160,40 @@ class TestFedoraBaseurlOverrideIdempotent(TestCase):
                 self.assertIn("mirrors.ustc.edu.cn/fedora", content)
 
 
+class TestThirdPartyRepoExclusion(TestCase):
+    """Regression: ISSUE-039. Third-party repos like tailscale-stable and
+    docker-ce must not have their baseurl rewritten.
+    """
+
+    def test_list_fedora_repo_files_excludes_third_party_repos(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            for name in ("AliYun.repo", "tailscale.repo", "docker-ce.repo",
+                         "epel.repo", "google-chrome.repo"):
+                (d / name).write_text("baseurl=https://x\n")
+
+            with patch.object(mirror_optimizer, "FEDORA_REPO_DIR", d):
+                files = {p.name for p in mirror_optimizer._list_fedora_repo_files()}
+
+            self.assertIn("AliYun.repo", files)
+            self.assertIn("epel.repo", files)
+            self.assertNotIn("tailscale.repo", files)
+            self.assertNotIn("docker-ce.repo", files)
+            self.assertNotIn("google-chrome.repo", files)
+
+    def test_list_fedora_repo_files_excludes_all_known_third_party(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            # Every name in REPO_EXCLUDE_BASEURL_FILES should be excluded
+            for name in mirror_optimizer.REPO_EXCLUDE_BASEURL_FILES:
+                (d / name).write_text("baseurl=https://x\n")
+
+            with patch.object(mirror_optimizer, "FEDORA_REPO_DIR", d):
+                files = {p.name for p in mirror_optimizer._list_fedora_repo_files()}
+
+            for name in mirror_optimizer.REPO_EXCLUDE_BASEURL_FILES:
+                self.assertNotIn(name, files, f"{name} should be excluded")
+
+
 if __name__ == "__main__":
     unittest_main()
