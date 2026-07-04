@@ -213,7 +213,7 @@ def packages_install(packages: list[str], distro: str) -> int:
 
     if distro == "arch":
         return run_verbose(["sudo", "pacman", "-S", "--noconfirm"] + packages)
-    elif distro == "fedora":
+    elif distro in ("fedora", "alinux"):
         return run_verbose(["sudo", "dnf", "install", "-y"] + packages)
     elif distro == "suse":
         return run_verbose(["sudo", "zypper", "install", "-y"] + packages)
