@@ -48,5 +48,58 @@ Components: main
                     self.assertEqual(mirror_optimizer._get_apt_sources_path(), custom_sources)
 
 
+class TestFedoraRepoFileSelection(TestCase):
+    """Test the dnf (RHEL-family) .repo file selection in mirror-optimizer.
+
+    Regression: glob('fedora*.repo') only matches files literally starting
+    with "fedora", which silently skips alinux/CentOS/RHEL/Rocky/Oracle
+    .repo files. The fix is glob('*.repo') with a small exclude list.
+    """
+
+    def test_list_fedora_repo_files_picks_up_rhel_family_names(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            (d / "AliYun.repo").write_text("baseurl=https://x\n")
+            (d / "CentOS-Base.repo").write_text("baseurl=https://x\n")
+            (d / "epel.repo").write_text("baseurl=https://x\n")
+            (d / "redhat.repo").write_text("baseurl=https://x\n")
+            (d / "rocky.repo").write_text("baseurl=https://x\n")
+
+            with patch.object(mirror_optimizer, "FEDORA_REPO_DIR", d):
+                files = [p.name for p in mirror_optimizer._list_fedora_repo_files()]
+
+            self.assertEqual(
+                files,
+                ["AliYun.repo", "CentOS-Base.repo", "epel.repo",
+                 "redhat.repo", "rocky.repo"],
+            )
+
+    def test_list_fedora_repo_files_excludes_placeholders(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            (d / "live.repo").write_text("baseurl=https://x\n")
+            (d / "example.repo").write_text("# placeholder\n")
+            (d / "disabled.repo").write_text("# disabled\n")
+            (d / "old.rpmnew").write_text("# rpmnew\n")
+            (d / "old.rpmsave").write_text("# rpmsave\n")
+            (d / "old.bak").write_text("# backup\n")
+            (d / "not_a_repo.txt").write_text("text\n")
+
+            with patch.object(mirror_optimizer, "FEDORA_REPO_DIR", d):
+                files = [p.name for p in mirror_optimizer._list_fedora_repo_files()]
+
+            self.assertEqual(files, ["live.repo"])
+
+    def test_optimize_fedora_reports_real_files_not_old_glob(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            (d / "AliYun.repo").write_text(
+                "name=aliyun\nbaseurl=https://mirrors.aliyun.com/alinux/$releasever/os/$basearch/\ngpgcheck=0\n"
+            )
+            with patch.object(mirror_optimizer, "FEDORA_REPO_DIR", d):
+                # Original bug: list(FEDORA_REPO_DIR.glob("fedora*.repo")) returned [].
+                self.assertGreater(len(mirror_optimizer._list_fedora_repo_files()), 0)
+
+
 if __name__ == "__main__":
     unittest_main()
