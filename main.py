@@ -2,12 +2,22 @@
 """LinuxScriptToolbox - Quick tools for various Linux distributions."""
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent
 
 sys.path.insert(0, str(PROJECT_DIR))
+
+
+# Default TERM for non-interactive sessions (e.g. ssh + --list-tools).
+# Without this, Rich prints "TERM environment variable not set" and pollutes
+# stdout. Set early so bootstrap's subprocess calls inherit it too.
+# 非交互场景（如 ssh + --list-tools）的 TERM 默认值。
+# 不设置时 Rich 会打印 "TERM environment variable not set" 污染 stdout。
+# 早期设置以便 bootstrap 派生的子进程也能继承。
+os.environ.setdefault("TERM", "xterm")
 
 
 # ── Virtual environment bootstrap ───────────────────────────────
