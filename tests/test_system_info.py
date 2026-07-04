@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 """Unit tests for tools/common/system_info.py helpers."""
 
-import sys
 from pathlib import Path
 from unittest import TestCase, main as unittest_main
 from unittest.mock import patch
-
-PROJECT_DIR = Path(__file__).parent.parent
-sys.path.insert(0, str(PROJECT_DIR))
 
 
 # Test disk usage presentation logic
