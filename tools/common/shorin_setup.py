@@ -80,7 +80,7 @@ class ShorinSetup(Tool):
     name = "shorin-setup"  # Internal tool identifier / 工具内部标识符
     display_name = "Shorin Arch Setup"  # Display name shown to user / 向用户展示的显示名称
     description = "Clone and run shorin-arch-setup scripts for desktop environment configuration"  # Tool description / 工具描述
-    distros = ["arch", "debian", "fedora", "suse"]  # Supported distributions / 支持的发行版列表
+    distros = ["arch", "debian", "fedora", "suse", "alinux"]  # Supported distributions / 支持的发行版列表
     group = "env"  # Menu group / 菜单分组
     requires_network = True  # Requires internet access for git clone / 需要网络连接以进行 git clone
     requires_sudo = True  # Requires sudo for package installation / 需要 sudo 权限以安装软件包

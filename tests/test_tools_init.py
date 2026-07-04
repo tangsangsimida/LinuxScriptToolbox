@@ -235,6 +235,36 @@ class TestGetTools(TestCase):
             self.assertIn("windows", tool.platforms)
 
 
+# Regression: ISSUE-010. Every tool must opt in to the alinux distro so the
+# alinux user sees the full menu and --tool NAME works. Before the fix
+# get_tools(distro='alinux') returned 0 tools.
+class TestAlinuxDistroCoverage(TestCase):
+
+    def test_all_tools_opt_in_to_alinux(self):
+        from tools import TOOLS
+        missing = [t.name for t in TOOLS if "alinux" not in t.distros]
+        self.assertEqual(
+            missing, [],
+            f"Tools missing alinux in distros: {missing}",
+        )
+
+    def test_get_tools_alinux_returns_all_tools(self):
+        from tools import get_tools, TOOLS
+        alinux_tools = get_tools(distro="alinux")
+        self.assertEqual(
+            len(alinux_tools), len(TOOLS),
+            f"alinux sees {len(alinux_tools)}/{len(TOOLS)} tools",
+        )
+
+    def test_get_tools_alinux_includes_mirror_optimizer(self):
+        # Sanity check: confirm a representative tool shows up.
+        from tools import get_tools
+        names = [t.name for t in get_tools(distro="alinux")]
+        self.assertIn("mirror-optimizer", names)
+        self.assertIn("device-init", names)
+        self.assertIn("ai-cli-setup", names)
+
+
 # Standalone test runner
 def run_tests():
     print("Running tools/__init__ unit tests...")
