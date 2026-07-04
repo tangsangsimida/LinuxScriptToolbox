@@ -43,5 +43,39 @@ class TestPackageIsInstalled(TestCase):
         self.assertFalse(platform_services.package_is_installed("nonexistent-pkg", "alinux"))
 
 
+class TestPackagesInstall(TestCase):
+    """Regression: ISSUE-026. packages_install() must use dnf on alinux,
+    not fall through to the else apt-get branch.
+    """
+
+    def setUp(self):
+        self.packages = ["git", "curl"]
+
+    @patch("utils.platform_services.IS_WINDOWS", False)
+    @patch("utils.platform_services.run_verbose", return_value=0)
+    def test_alinux_uses_dnf(self, mock_run):
+        from utils.platform_services import packages_install
+        packages_install(self.packages, "alinux")
+        cmd = mock_run.call_args[0][0]
+        self.assertIn("dnf", cmd)
+        self.assertNotIn("apt-get", cmd)
+
+    @patch("utils.platform_services.IS_WINDOWS", False)
+    @patch("utils.platform_services.run_verbose", return_value=0)
+    def test_fedora_uses_dnf(self, mock_run):
+        from utils.platform_services import packages_install
+        packages_install(self.packages, "fedora")
+        cmd = mock_run.call_args[0][0]
+        self.assertIn("dnf", cmd)
+
+    @patch("utils.platform_services.IS_WINDOWS", False)
+    @patch("utils.platform_services.run_verbose", return_value=0)
+    def test_debian_uses_apt_get(self, mock_run):
+        from utils.platform_services import packages_install
+        packages_install(self.packages, "debian")
+        cmd = mock_run.call_args[0][0]
+        self.assertIn("apt-get", cmd)
+
+
 if __name__ == "__main__":
     unittest_main()
