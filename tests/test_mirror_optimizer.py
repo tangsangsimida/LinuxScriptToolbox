@@ -101,5 +101,64 @@ class TestFedoraRepoFileSelection(TestCase):
                 self.assertGreater(len(mirror_optimizer._list_fedora_repo_files()), 0)
 
 
+class TestFedoraBaseurlOverrideIdempotent(TestCase):
+    """Regression: ISSUE-030. Repeated runs must not stack /fedora/fedora/…
+    into the baseurl.  _optimize_fedora should skip lines where the host is
+    already a China mirror host.
+    """
+
+    def test_second_run_skips_already_replaced_url(self):
+        """Simulate two-pass over AliYun.repo — the second pass must leave
+        the line unchanged (no double /fedora/fedora).
+        """
+        RAW = (
+            "name=alinux\n"
+            "baseurl=https://mirrors.aliyun.com/alinux/$releasever/os/$basearch/\n"
+            "gpgcheck=0\n"
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "AliYun.repo"
+            repo.write_text(RAW)
+
+            with patch.object(mirror_optimizer, "FEDORA_REPO_DIR", Path(tmp)), \
+                 patch.object(mirror_optimizer, "CHINA_MIRROR_HOSTS",
+                              ["mirrors.ustc.edu.cn"]), \
+                 patch.object(mirror_optimizer, "_list_fedora_repo_files",
+                              return_value=[repo]):
+                mirror_optimizer._optimize_fedora()
+                after_first = repo.read_text()
+                # First run should have replaced the host
+                self.assertIn("mirrors.ustc.edu.cn/fedora", after_first)
+                self.assertNotIn("/fedora/fedora", after_first)
+
+                mirror_optimizer._optimize_fedora()
+                after_second = repo.read_text()
+                # Second run must NOT add another /fedora
+                self.assertIn("mirrors.ustc.edu.cn/fedora", after_second)
+                self.assertNotIn("/fedora/fedora", after_second)
+
+    def test_original_url_get_replaced_on_first_pass(self):
+        """A plain aliyun URL should be replaced on first run."""
+        RAW = (
+            "name=alinux\n"
+            "baseurl=https://mirrors.aliyun.com/alinux/$releasever/os/$basearch/\n"
+            "gpgcheck=0\n"
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "AliYun.repo"
+            repo.write_text(RAW)
+
+            with patch.object(mirror_optimizer, "FEDORA_REPO_DIR", Path(tmp)), \
+                 patch.object(mirror_optimizer, "CHINA_MIRROR_HOSTS",
+                              ["mirrors.ustc.edu.cn"]), \
+                 patch.object(mirror_optimizer, "_list_fedora_repo_files",
+                              return_value=[repo]):
+                mirror_optimizer._optimize_fedora()
+                content = repo.read_text()
+                self.assertIn("mirrors.ustc.edu.cn/fedora", content)
+
+
 if __name__ == "__main__":
     unittest_main()

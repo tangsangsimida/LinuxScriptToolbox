@@ -273,6 +273,14 @@ def _optimize_fedora() -> bool:
             if line.strip().startswith("metalink="):
                 new_lines.append(f"# {line}")
             elif line.strip().startswith("baseurl="):
+                # Skip lines already pointing at a China mirror to keep
+                # the operation idempotent — repeated runs must not stack
+                # /fedora/fedora/… into the URL.
+                # 跳过已指向中国镜像的行，保证幂等性——多次运行不能叠出
+                # /fedora/fedora/… 路径。
+                if any(h in line for h in CHINA_MIRROR_HOSTS):
+                    new_lines.append(line)
+                    continue
                 # Replace the host with China mirror
                 new_line = re.sub(
                     r"baseurl=https?://[^/]+",
