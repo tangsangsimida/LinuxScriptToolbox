@@ -1162,7 +1162,7 @@ class TailscaleDerp(Tool):
     name = "tailscale-derp"
     display_name = "Tailscale DERP Relay"
     description = "One-click deploy DERP relay (Docker/systemd) with optional Headscale"
-    distros = ["arch", "debian", "fedora", "suse"]
+    distros = ["arch", "debian", "fedora", "suse", "alinux"]
     group = "env"
     requires_network = True
     requires_sudo = True

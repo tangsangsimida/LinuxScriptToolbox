@@ -627,7 +627,7 @@ class TailscaleClient(Tool):
     name = "tailscale-client"
     display_name = "Tailscale Client Setup"
     description = "Quick deploy Tailscale client with custom DERP relay"
-    distros = ["arch", "debian", "fedora", "suse", "unknown", "windows"]
+    distros = ["arch", "debian", "fedora", "suse", "alinux", "unknown", "windows"]
     platforms = ["linux", "windows"]
     requires_network = True
     requires_sudo = True

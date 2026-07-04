@@ -46,6 +46,7 @@ DISTRO_CONFIG = {
     "arch": {"service": "sshd", "package": "openssh"},
     "debian": {"service": "ssh", "package": "openssh-server"},
     "fedora": {"service": "sshd", "package": "openssh-server"},
+    "alinux": {"service": "sshd", "package": "openssh-server"},  # RHEL family (dnf) / RHEL 系（dnf）
     "suse": {"service": "sshd", "package": "openssh"},
     "windows": {"service": "sshd", "package": "OpenSSH.Server~~~~0.0.1.0"},
 }
