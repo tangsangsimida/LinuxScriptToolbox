@@ -19,38 +19,38 @@ PROJECT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
 
+# Test t() function for translation lookup
 class TestTranslationLookup(TestCase):
-    """Test t() function for translation lookup."""
 
+    # Reset global language state before each test
     def setUp(self):
-        """Reset global language state before each test."""
         import utils.i18n
         utils.i18n._current_lang = None
 
+    # Test English translation lookup
     @patch("utils.i18n.get_lang", return_value="en")
     def test_english_translation(self, mock_get_lang):
-        """Test English translation lookup."""
         from utils.i18n import t
         result = t("ui.available_tools")
         self.assertEqual(result, "Available tools:")
 
+    # Test Chinese translation lookup
     @patch("utils.i18n.get_lang", return_value="zh")
     def test_chinese_translation(self, mock_get_lang):
-        """Test Chinese translation lookup."""
         from utils.i18n import t
         result = t("ui.available_tools")
         self.assertEqual(result, "可用工具：")
 
+    # Test translation with format kwargs
     @patch("utils.i18n.get_lang", return_value="en")
     def test_translation_with_kwargs(self, mock_get_lang):
-        """Test translation with format kwargs."""
         from utils.i18n import t
         result = t("ui.detected", distro="arch")
         self.assertEqual(result, "Detected: arch")
 
+    # Test fallback to English when key missing in current language
     @patch("utils.i18n.get_lang", return_value="en")
     def test_missing_key_fallback_to_english(self, mock_get_lang):
-        """Test fallback to English when key missing in current language."""
         from utils.i18n import t, TRANSLATIONS
         # Temporarily add a key only to English
         TRANSLATIONS["en"]["test.key"] = "English only"
@@ -58,26 +58,26 @@ class TestTranslationLookup(TestCase):
         self.assertEqual(result, "English only")
         del TRANSLATIONS["en"]["test.key"]
 
+    # Test that missing key returns the key itself
     @patch("utils.i18n.get_lang", return_value="en")
     def test_missing_key_returns_key(self, mock_get_lang):
-        """Test that missing key returns the key itself."""
         from utils.i18n import t
         result = t("nonexistent.key.name")
         self.assertEqual(result, "nonexistent.key.name")
 
+    # Test fallback to English for unsupported language
     @patch("utils.i18n.get_lang", return_value="fr")
     def test_unsupported_lang_falls_back_to_english(self, mock_get_lang):
-        """Test fallback to English for unsupported language."""
         from utils.i18n import t
         result = t("ui.available_tools")
         self.assertEqual(result, "Available tools:")
 
 
+# Test translation catalog consistency
 class TestTranslationCatalog(TestCase):
-    """Test translation catalog consistency."""
 
+    # Every supported language should define the same translation keys
     def test_supported_languages_have_same_keys(self):
-        """Every supported language should define the same translation keys."""
         from utils.i18n import TRANSLATIONS
 
         baseline = set(TRANSLATIONS["en"])
@@ -86,8 +86,8 @@ class TestTranslationCatalog(TestCase):
                 keys = set(translations)
                 self.assertEqual(keys, baseline)
 
+    # Literal translation dictionaries should not define duplicate keys
     def test_translation_source_has_no_duplicate_keys(self):
-        """Literal translation dictionaries should not define duplicate keys."""
         source = (PROJECT_DIR / "utils" / "i18n.py").read_text()
         tree = ast.parse(source)
         duplicates = {}
@@ -122,8 +122,8 @@ class TestTranslationCatalog(TestCase):
 
         self.assertEqual(duplicates, {"en": [], "zh": []})
 
+    # Every literal t('key') usage should exist in the translation catalog
     def test_constant_translation_keys_exist(self):
-        """Every literal t('key') usage should exist in the translation catalog."""
         from utils.i18n import TRANSLATIONS
 
         used_keys = set()
@@ -152,49 +152,49 @@ class TestTranslationCatalog(TestCase):
         self.assertEqual(missing, [])
 
 
+# Test get_lang() and set_lang() functions
 class TestLanguagePersistence(TestCase):
-    """Test get_lang() and set_lang() functions."""
 
+    # Reset global language state before each test
     def setUp(self):
-        """Reset global language state before each test."""
         import utils.i18n
         utils.i18n._current_lang = None
 
+    # Test that default language is English
     @patch("utils.i18n._load_config", return_value={})
     def test_default_language_is_english(self, mock_load):
-        """Test that default language is English."""
         from utils.i18n import get_lang
         result = get_lang()
         self.assertEqual(result, "en")
 
+    # Test loading language from config file
     @patch("utils.i18n._load_config", return_value={"lang": "zh"})
     def test_load_language_from_config(self, mock_load):
-        """Test loading language from config file."""
         from utils.i18n import get_lang
         result = get_lang()
         self.assertEqual(result, "zh")
 
+    # Test that set_lang() persists to config
     @patch("utils.i18n._save_config")
     @patch("utils.i18n._load_config", return_value={})
     def test_set_language_persists(self, mock_load, mock_save):
-        """Test that set_lang() persists to config."""
         from utils.i18n import set_lang, get_lang
         set_lang("zh")
         self.assertEqual(get_lang(), "zh")
         mock_save.assert_called_once_with({"lang": "zh"})
 
 
+# Test tool_display_name() and tool_description() functions
 class TestToolDisplayNames(TestCase):
-    """Test tool_display_name() and tool_description() functions."""
 
+    # Reset global language state before each test
     def setUp(self):
-        """Reset global language state before each test."""
         import utils.i18n
         utils.i18n._current_lang = None
 
+    # Test tool display name lookup
     @patch("utils.i18n.get_lang", return_value="en")
     def test_tool_display_name(self, mock_get_lang):
-        """Test tool display name lookup."""
         from utils.i18n import tool_display_name
         mock_tool = MagicMock()
         mock_tool.name = "mirror-optimizer"
@@ -202,9 +202,9 @@ class TestToolDisplayNames(TestCase):
         result = tool_display_name(mock_tool)
         self.assertEqual(result, "Optimize Mirrors")
 
+    # Test tool description lookup
     @patch("utils.i18n.get_lang", return_value="en")
     def test_tool_description(self, mock_get_lang):
-        """Test tool description lookup."""
         from utils.i18n import tool_description
         mock_tool = MagicMock()
         mock_tool.name = "mirror-optimizer"
@@ -212,9 +212,9 @@ class TestToolDisplayNames(TestCase):
         result = tool_description(mock_tool)
         self.assertIn("China mirrors", result)
 
+    # Test fallback to tool.display_name when translation missing
     @patch("utils.i18n.get_lang", return_value="en")
     def test_tool_display_name_fallback(self, mock_get_lang):
-        """Test fallback to tool.display_name when translation missing."""
         from utils.i18n import tool_display_name
         mock_tool = MagicMock()
         mock_tool.name = "nonexistent-tool"
@@ -223,8 +223,8 @@ class TestToolDisplayNames(TestCase):
         self.assertEqual(result, "Fallback Name")
 
 
+# Standalone test runner
 def run_tests():
-    """Standalone test runner."""
     print("Running i18n unit tests...")
     print("=" * 60)
     unittest_main(module=__name__, exit=False, verbosity=2)

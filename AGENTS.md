@@ -41,3 +41,11 @@ Recent history uses Conventional Commit-style prefixes, often scoped: `feat(i18n
 ## Security & Configuration Tips
 
 Do not commit local `config.json`, generated `.venv/`, pytest cache, or copied remote test credentials. Tools that edit system files should use `utils.sudo_utils.write_file()` or `copy_file()` and create backups when changing persistent system configuration.
+
+## Critical UI Constraints (Enforced by `tests/check_ui_patterns.py`)
+
+- **Never use raw `input()` in tools** — use `utils.ui` functions.
+- **Never use `clear_screen` directly** — `prompt_selection()` handles it.
+- **Never hardcode `"back"` strings** — use `BACK_ACTION` constant from `utils.ui`.
+- **Never define `_show_menu` methods** — legacy pattern; use `prompt_selection()` inside `run()`.
+- **All user-facing strings must go through `t()` for i18n** — add keys to both EN and ZH dicts in `i18n.py`.

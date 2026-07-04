@@ -19,8 +19,8 @@ PROJECT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
 
+# Test UI constants are defined correctly
 class TestUIConstants(TestCase):
-    """Test UI constants are defined correctly."""
 
     def test_back_action_constant(self):
         from utils.ui import BACK_ACTION
@@ -31,8 +31,8 @@ class TestUIConstants(TestCase):
         self.assertIsNone(CANCEL_ACTION)
 
 
+# Test semantic markers are defined
 class TestMarkers(TestCase):
-    """Test semantic markers are defined."""
 
     def test_markers_exist(self):
         from utils.ui import MARKERS
@@ -45,8 +45,8 @@ class TestMarkers(TestCase):
             self.assertIsInstance(value, str, f"MARKERS[{key!r}] should be a string")
 
 
+# Test confirm() function
 class TestConfirm(TestCase):
-    """Test confirm() function."""
 
     @patch("utils.ui.IS_TTY", True)
     @patch("utils.ui.questionary.confirm")
@@ -102,8 +102,8 @@ class TestConfirm(TestCase):
         self.assertFalse(result)
 
 
+# Test select_option() function
 class TestSelectOption(TestCase):
-    """Test select_option() function."""
 
     @patch("utils.ui.IS_TTY", True)
     @patch("utils.ui._select_with_keys")
@@ -157,8 +157,8 @@ class TestSelectOption(TestCase):
         self.assertIsNone(result)
 
 
+# Test prompt_selection() function
 class TestPromptSelection(TestCase):
-    """Test prompt_selection() function."""
 
     @patch("utils.ui.IS_TTY", True)
     @patch("utils.ui._select_with_keys")
@@ -204,8 +204,8 @@ class TestPromptSelection(TestCase):
         self.assertEqual(result, "tool1")
 
 
+# Test print helper functions
 class TestPrintHelpers(TestCase):
-    """Test print helper functions."""
 
     @patch("utils.ui.console")
     def test_print_success(self, mock_console):
@@ -232,8 +232,8 @@ class TestPrintHelpers(TestCase):
         mock_console.print.assert_called_once()
 
 
+# Standalone test runner
 def run_tests():
-    """Standalone test runner."""
     print("Running UI unit tests...")
     print("=" * 60)
     unittest_main(module=__name__, exit=False, verbosity=2)
