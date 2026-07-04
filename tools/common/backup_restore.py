@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 from tools.base import Tool
+from . import backup_restore_translations  # noqa: F401 - side-effect import for i18n registration
 from utils.i18n import t
 from utils.sudo_utils import copy_file
 from utils.ui import print_success, print_error, print_info, print_warning, confirm, console, prompt_selection, BACK_ACTION
@@ -40,14 +41,16 @@ CONFIG_FILES = {
 }
 
 
+# Get or create backup directory.
+
 def _get_backup_dir() -> Path:
-    """Get or create backup directory."""
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
     return BACKUP_DIR
 
 
+# List available backups.
+
 def _list_backups() -> list[dict]:
-    """List available backups."""
     backup_dir = _get_backup_dir()
     backups = []
 
@@ -63,8 +66,9 @@ def _list_backups() -> list[dict]:
     return backups
 
 
+# Create a backup of critical config files.
+
 def _create_backup() -> bool:
-    """Create a backup of critical config files."""
     print_info(t("msg.backup_creating"))
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -98,8 +102,9 @@ def _create_backup() -> bool:
     return True
 
 
+# Restore a backup.
+
 def _restore_backup() -> bool:
-    """Restore a backup."""
     backups = _list_backups()
 
     if not backups:
@@ -155,8 +160,9 @@ def _restore_backup() -> bool:
     return True
 
 
+# List all available backups.
+
 def _list_all_backups() -> bool:
-    """List all available backups."""
     backups = _list_backups()
 
     if not backups:
@@ -177,6 +183,7 @@ class BackupRestore(Tool):
     display_name = "Backup/Restore"
     description = "Backup and restore critical system configuration files"
     distros = ["arch", "debian", "fedora", "suse", "unknown"]
+    group = "data"
     requires_sudo = True
 
     def run(self) -> bool | None:
@@ -196,3 +203,20 @@ class BackupRestore(Tool):
 
         print_error(t("ui.invalid_selection"))
         return False
+
+
+    # Preview which system files would be backed up.
+
+    def run_dry(self) -> str | None:
+        files = ["/etc/fstab", "/etc/default/grub", "/etc/ssh/sshd_config", "/etc/sysctl.conf"]
+        existing, missing = [], []
+        for f in files:
+            (existing if Path(f).exists() else missing).append(f)
+        lines = ["[DRY-RUN] Backup/Restore would:", ""]
+        for f in existing:
+            lines.append(f"  Would backup: {f}")
+        for f in missing:
+            lines.append(f"  Not found (skip): {f}")
+        lines.append("")
+        lines.append("  Destination: ~/.config/linuxscripttoolbox/backups/<timestamp>/")
+        return "\n".join(lines)

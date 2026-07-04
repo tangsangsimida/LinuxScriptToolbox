@@ -4,7 +4,8 @@ import re
 from pathlib import Path
 
 from tools.base import Tool
-from utils.cmd_utils import run_cmd
+from . import mirror_optimizer_translations  # noqa: F401 - side-effect import for i18n registration
+from utils.platform import command_exists
 from utils.sudo_utils import write_file, copy_file, need_sudo
 from utils.i18n import t
 from utils.ui import print_success, print_error, print_info
@@ -29,10 +30,11 @@ CHINA_ARCH_MIRRORS = [
 
 # ── Package manager detection ───────────────────────────────────
 
+# Detect the active package manager.
+
 def _detect_pkg_manager() -> str | None:
-    """Detect the active package manager."""
     for pm in ["pacman", "apt", "dnf", "zypper"]:
-        if run_cmd(["which", pm])[0] == 0:
+        if command_exists(pm):
             return pm
     return None
 
@@ -328,6 +330,7 @@ class MirrorOptimizer(Tool):
     display_name = "Optimize Mirrors"
     description = "Replace package manager mirrors with China mirrors (supports any distro)"
     distros = ["arch", "debian", "fedora", "suse", "unknown"]
+    group = "env"
     requires_sudo = True
 
     def run(self) -> bool | None:
@@ -340,3 +343,32 @@ class MirrorOptimizer(Tool):
         print_info(t("msg.detected_pm", pm=t(pm_key)))
 
         return optimizer()
+
+
+    # Preview package manager mirror changes without modifying files.
+
+    def run_dry(self) -> str | None:
+        pm = _detect_pkg_manager()
+        if pm is None:
+            return "No supported package manager detected. No changes would be made."
+        lines = ["[DRY-RUN] Mirror Optimizer would:", "", f"  Package manager: {pm}"]
+        if pm == "pacman":
+            lines.append(f"  File to modify: {PACMAN_MIRRORLIST}")
+            lines.append("  Would backup before modification.")
+            for m in CHINA_ARCH_MIRRORS:
+                lines.append(f"  Would add: Server = {m}")
+        elif pm == "apt":
+            lines.append("  Would replace APT sources with USTC mirror.")
+            lines.append("  Files: /etc/apt/sources.list or sources.list.d/")
+            lines.append("  Would backup before modification.")
+        elif pm == "dnf":
+            lines.append(f"  Directory: {FEDORA_REPO_DIR}")
+            lines.append("  Would replace baseurl with USTC mirror in all .repo files.")
+            lines.append("  Would backup before modification.")
+        elif pm == "zypper":
+            lines.append(f"  Directory: {SUSE_REPO_DIR}")
+            lines.append("  Would replace baseurl with USTC mirror in all .repo files.")
+            lines.append("  Would backup before modification.")
+        elif pm in ("winget", "choco", "scoop"):
+            lines.append(f"  Would configure {pm} to use China mirrors.")
+        return "\n".join(lines)
