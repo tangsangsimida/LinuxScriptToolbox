@@ -226,6 +226,25 @@ def _optimize_apt() -> bool:
 FEDORA_REPO_DIR = Path("/etc/yum.repos.d")
 FEDORA_MIRROR = f"https://{CHINA_MIRROR_HOSTS[0]}/fedora"
 
+# Patterns to skip when rewriting .repo files. RHEL-family distros (Fedora,
+# CentOS, RHEL, Rocky, Oracle, Alibaba Cloud Linux) all use /etc/yum.repos.d
+# but each ships its own naming convention. Excluding placeholder/disabled
+# files prevents us from rewriting files that have no live baseurl/mirrorlist.
+# 跳过这些模式的 .repo 文件。RHEL 家族（Fedora/CentOS/RHEL/Rocky/Oracle/
+# Alibaba Cloud Linux）都使用 /etc/yum.repos.d，但各家命名不同；排除占位
+# / 禁用文件可避免改写没有有效 baseurl/mirrorlist 的文件。
+REPO_EXCLUDE_GLOBS = ["*example*", "*disabled*", "*.rpmnew", "*.rpmsave", "*.bak"]
+
+
+# Return the list of .repo files under FEDORA_REPO_DIR that the optimizer
+# will rewrite, sorted, after applying the exclude patterns.
+# 返回 FEDORA_REPO_DIR 下优化器会改写的 .repo 文件列表（已排除占位文件，已排序）。
+def _list_fedora_repo_files() -> list[Path]:
+    return [
+        p for p in sorted(FEDORA_REPO_DIR.glob("*.repo"))
+        if not any(p.match(g) for g in REPO_EXCLUDE_GLOBS)
+    ]
+
 
 def _optimize_fedora() -> bool:
     if not FEDORA_REPO_DIR.exists():
@@ -235,7 +254,7 @@ def _optimize_fedora() -> bool:
     if need_sudo(FEDORA_REPO_DIR):
         print_info(t("msg.root_required"))
 
-    repo_files = list(FEDORA_REPO_DIR.glob("fedora*.repo"))
+    repo_files = _list_fedora_repo_files()
     if not repo_files:
         print_error(t("msg.repo_files_not_found"))
         return False
@@ -363,7 +382,20 @@ class MirrorOptimizer(Tool):
             lines.append("  Would backup before modification.")
         elif pm == "dnf":
             lines.append(f"  Directory: {FEDORA_REPO_DIR}")
-            lines.append("  Would replace baseurl with USTC mirror in all .repo files.")
+            # Show the same files the real run will touch so the dry-run
+            # output reflects actual behavior (not just "all .repo files").
+            # 列出与实际运行相同的文件，让 dry-run 反映真实行为。
+            preview_files = []
+            if FEDORA_REPO_DIR.exists():
+                preview_files = [
+                    p.name for p in _list_fedora_repo_files()
+                ]
+            if preview_files:
+                lines.append(
+                    "  Would replace baseurl in: " + ", ".join(preview_files)
+                )
+            else:
+                lines.append("  Would replace baseurl in *.repo (no matches found).")
             lines.append("  Would backup before modification.")
         elif pm == "zypper":
             lines.append(f"  Directory: {SUSE_REPO_DIR}")
