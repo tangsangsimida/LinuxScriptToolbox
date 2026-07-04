@@ -52,7 +52,7 @@ def _clean_pkg_cache(distro: str) -> bool:
     if distro == "arch":
         # Keep only the latest version of each package
         code = run_verbose(["sudo", "pacman", "-Sc", "--noconfirm"])
-    elif distro == "fedora":
+    elif distro in ("fedora", "alinux"):  # alinux = RHEL family, dnf / 阿里云 Linux = RHEL 系，使用 dnf
         code = run_verbose(["sudo", "dnf", "clean", "all"])
     elif distro == "suse":
         code = run_verbose(["sudo", "zypper", "clean", "--all"])
@@ -183,7 +183,7 @@ class SystemCleanup(Tool):
             lines.append("  Package cache: pacman -Scc")
         elif distro in ("debian", "ubuntu"):
             lines.append("  Package cache: apt-get clean && apt-get autoremove")
-        elif distro == "fedora":
+        elif distro in ("fedora", "alinux"):  # alinux = RHEL family / 阿里云 Linux = RHEL 系
             lines.append("  Package cache: dnf clean all")
         elif distro == "suse":
             lines.append("  Package cache: zypper clean")

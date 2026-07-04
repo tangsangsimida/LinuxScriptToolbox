@@ -96,7 +96,7 @@ class DevToolsSetup(Tool):
         # 选择发行版特定的包列表，默认回退到 debian_pkgs
         if distro == "arch":
             pkgs = option.get("arch_pkgs", [])
-        elif distro == "fedora":
+        elif distro in ("fedora", "alinux"):  # alinux = RHEL family, dnf / 阿里云 Linux = RHEL 系，使用 dnf
             pkgs = option.get("fedora_pkgs", option.get("debian_pkgs", []))
         elif distro == "suse":
             pkgs = option.get("suse_pkgs", option.get("debian_pkgs", []))

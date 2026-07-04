@@ -320,7 +320,7 @@ def _install_tailscale_linux() -> bool:
         return _install_tailscale_arch()
     elif distro in ("debian", "ubuntu"):
         return _install_tailscale_debian()
-    elif distro == "fedora":
+    elif distro in ("fedora", "alinux"):  # alinux = RHEL family (dnf) / 阿里云 Linux = RHEL 系（dnf）
         return _install_tailscale_fedora()
     elif distro == "suse":
         return _install_tailscale_suse()

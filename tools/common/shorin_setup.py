@@ -331,7 +331,7 @@ class ShorinSetup(Tool):
         # 根据检测到的发行版分派到对应的专属安装方法
         if distro == "arch":
             return self._run_arch_setup(selected["script"])
-        elif distro == "fedora":
+        elif distro in ("fedora", "alinux"):  # alinux = RHEL family / 阿里云 Linux = RHEL 系
             return self._run_fedora_setup(selected["id"])
         elif distro == "suse":
             return self._run_suse_setup(selected["id"])
