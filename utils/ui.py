@@ -342,13 +342,29 @@ def show_tool_header(name: str):
 #
 # 显示带样式的提示符并返回用户输入。
 #
+# In non-TTY mode (piped stdin, scripted invocation) the underlying Rich
+# Prompt.ask raises EOFError when the stream ends. Fall back to a plain
+# input() which already catches EOFError and KeyboardInterrupt, returning
+# an empty string so callers can detect "no input available" and abort
+# cleanly instead of crashing the whole program.
+# 在非 TTY 模式（管道输入、脚本调用）下，底层 Rich Prompt.ask 在流结束时
+# 会抛 EOFError。回退到内置 input()，它已捕获 EOFError 与
+# KeyboardInterrupt 并返回空字符串，让调用方能检测"无输入可用"并优雅
+# 退出，而不是让整个程序崩溃。
+#
 # Args:
 #     prompt: Prompt text to display / 要显示的提示文本。
 #     **kwargs: Additional arguments passed to Rich Prompt.ask / 传递给 Rich Prompt.ask 的额外参数。
 #
 # Returns:
-#     User input string / 用户输入的字符串。
+#     User input string, or "" in non-TTY mode if no input is available.
+#     用户输入字符串；非 TTY 模式下若无输入则返回 ""。
 def ask(prompt: str, **kwargs) -> str:
+    if not IS_TTY:
+        try:
+            return input(f"  ▸ {prompt}: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            return ""
     return Prompt.ask(f"  [bold cyan]▸[/bold cyan] {prompt}", **kwargs)
 
 
