@@ -9,8 +9,6 @@ from unittest.mock import patch
 PROJECT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
-from tools.common import system_info
-
 
 # Test disk usage presentation logic
 class TestDiskHomeScan(TestCase):
