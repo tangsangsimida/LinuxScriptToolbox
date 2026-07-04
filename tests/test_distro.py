@@ -129,6 +129,29 @@ class TestDetectDistro(TestCase):
         self.assertEqual(result, "unknown")
 
     @patch("utils.distro.Path")
+    def test_alibaba_cloud_linux(self, mock_path):
+        """Test detection of Alibaba Cloud Linux 3 (ID=alinux).
+
+        Uses the real /etc/os-release quoting style (ID="alinux") so the
+        assertion reflects what production detection actually sees.
+        使用真实的 /etc/os-release 引号格式（ID="alinux"），确保测试反映
+        生产环境实际检测到的格式。
+        """
+        mock_os_release = MagicMock()
+        mock_os_release.exists.return_value = True
+        mock_os_release.read_text.return_value = (
+            'NAME="Alibaba Cloud Linux"\n'
+            'VERSION="3 (OpenAnolis Edition)"\n'
+            'ID="alinux"\n'
+            'ID_LIKE="rhel fedora centos anolis"\n'
+        )
+        mock_path.return_value = mock_os_release
+
+        from utils.distro import detect_distro
+        result = detect_distro()
+        self.assertEqual(result, "alinux")
+
+    @patch("utils.distro.Path")
     def test_no_os_release(self, mock_path):
         """Test when /etc/os-release does not exist."""
         mock_os_release = MagicMock()
