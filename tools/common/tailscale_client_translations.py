@@ -29,6 +29,7 @@ register_translations("en", {
     "msg.tc_no_cert_warning": "No certificate fingerprint. Clients may need InsecureForTests flag.",
     "msg.tc_ask_derp_port": "DERP port (HTTPS)",
     "msg.tc_ask_stun_port": "STUN port (UDP)",
+    "msg.tc_invalid_port": "Invalid port \"{value}\"; using default {default}.",
 
     # Generate DERPMap
     "msg.tc_generated_derpmap": "Generated DERPMap configuration:",
@@ -123,6 +124,7 @@ register_translations("zh", {
     "msg.tc_no_cert_warning": "未设置证书指纹，客户端可能需要 InsecureForTests 标志。",
     "msg.tc_ask_derp_port": "DERP 端口（HTTPS）",
     "msg.tc_ask_stun_port": "STUN 端口（UDP）",
+    "msg.tc_invalid_port": "无效端口 \"{value}\"；使用默认值 {default}。",
 
     # Generate DERPMap
     "msg.tc_generated_derpmap": "生成的 DERPMap 配置：",

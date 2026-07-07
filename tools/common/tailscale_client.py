@@ -108,11 +108,26 @@ def _get_derp_info() -> dict | None:
     derp_port = ask(t("msg.tc_ask_derp_port"), default="443")
     stun_port = ask(t("msg.tc_ask_stun_port"), default="3478")
 
+    # ask() may return "" in non-TTY mode (ISSUE-019) when stdin closes before
+    # all answers are read, or when the user submits a blank line.  In that case
+    # fall back to the documented defaults rather than crashing on int() with
+    # a ValueError traceback — that would be a poor user experience.
+    # ask() 在非 TTY 模式（#019）或用户输入空行时可能返回 ""，此时回退到
+    # 文档化默认值，避免 int() 抛 ValueError 造成 Python traceback。
+    def _safe_int(raw: str, default: int) -> int:
+        try:
+            return int(raw.strip()) if raw.strip() else default
+        except ValueError:
+            print_warning(
+                t("msg.tc_invalid_port", value=raw, default=default)
+            )
+            return default
+
     return {
         "host": host.strip(),
         "cert_name": cert_name.strip(),
-        "derp_port": int(derp_port.strip()),
-        "stun_port": int(stun_port.strip()),
+        "derp_port": _safe_int(derp_port, 443),
+        "stun_port": _safe_int(stun_port, 3478),
     }
 
 
