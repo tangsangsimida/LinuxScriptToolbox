@@ -22,44 +22,66 @@ ssh_cmd() {
     ssh -o BatchMode=yes -o ConnectTimeout=10 "$REMOTE_HOST" "$@"
 }
 
+# Run a single cycle step.  Log the step header, execute the command, record
+# whether it succeeded.  Never raises — returns 0 always so the loop continues.
+# Aggregate failure is reported via ${STEPS_FAILED} at the cycle boundary.
+#
+# 运行单个步骤：打印标题、执行、记录成败。永不抛错——总返回 0 让循环继续，
+# 整轮的失败数通过 ${STEPS_FAILED} 在末尾汇总。
+step() {
+    local label="$1"
+    shift
+    echo "[${label}]"
+    if "$@"; then
+        echo "  ok"
+    else
+        echo "  FAILED (exit $?)"
+        STEPS_FAILED=$((STEPS_FAILED + 1))
+    fi
+}
+
 cycle() {
     local ts
     ts="$(date '+%Y-%m-%d %H:%M:%S')"
+    STEPS_FAILED=0
     echo "=========================================="
     echo "Test cycle: ${ts}"
     echo "=========================================="
 
     # 1. Pull latest code on remote
-    echo "[1/5] Pull latest on ${REMOTE_HOST}"
-    ssh_cmd "cd ${PROJECT_PATH} && git stash && git pull --ff-only origin main" || true
+    step "1/5 pull" ssh_cmd "cd ${PROJECT_PATH} && git stash && git pull --ff-only origin main"
 
-    # 2. Regression-test recently closed issues
-    echo "[2/5] Regression test for closed issues"
+    # 2. Regression-test recently closed issues (informational scan only —
+    #    actual re-test happens via explicit smoke-test below)
+    echo "[2/5] closed issues"
     local closed
     closed=$(gh issue list --state closed --limit 10 --json number,title --jq '.[] | "\(.number)|\(.title)"')
     if [[ -n "${closed}" ]]; then
-        while IFS='|' read -r n title; do
-            echo "  issue #${n}: ${title}"
-            # Pick 1 representative option per issue title keyword
-            ssh_cmd "cd ${PROJECT_PATH} && source .venv/bin/activate && echo y | timeout 30 python main.py --tool system-info --lang en" >/dev/null 2>&1 || true
-        done <<< "${closed}"
+        echo "${closed}" | while IFS='|' read -r n title; do
+            echo "  - #${n}: ${title}"
+        done
+    else
+        echo "  (none)"
     fi
 
-    # 3. Unit tests + lint + UI checks
-    echo "[3/5] Static checks"
-    ssh_cmd "cd ${PROJECT_PATH} && source .venv/bin/activate && python -m pytest tests/ -q" || true
-    ssh_cmd "cd ${PROJECT_PATH} && source .venv/bin/activate && python -m ruff check ." || true
-    ssh_cmd "cd ${PROJECT_PATH} && source .venv/bin/activate && python tests/check_ui_patterns.py" || true
+    # 3. Static checks
+    step "3a pytest" ssh_cmd "cd ${PROJECT_PATH} && source .venv/bin/activate && python -m pytest tests/ -q"
+    step "3b ruff"   ssh_cmd "cd ${PROJECT_PATH} && source .venv/bin/activate && python -m ruff check ."
+    step "3c ui"     ssh_cmd "cd ${PROJECT_PATH} && source .venv/bin/activate && python tests/check_ui_patterns.py"
 
-    # 4. Smoke-test every tool (option 1 = safe default)
-    echo "[4/5] Smoke test tools"
+    # 4. Smoke test every tool
+    echo "[4/5] tools"
     for tool in "${TOOLS[@]}"; do
-        echo "  - ${tool}"
-        ssh_cmd "cd ${PROJECT_PATH} && source .venv/bin/activate && echo 1 | timeout 30 python main.py --tool ${tool} --lang en" >/dev/null 2>&1 || true
+        if ssh_cmd "cd ${PROJECT_PATH} && source .venv/bin/activate && echo 1 | timeout 30 python main.py --tool ${tool} --lang en" >/dev/null 2>&1; then
+            echo "  - ${tool}: ok"
+        else
+            echo "  - ${tool}: FAILED"
+            STEPS_FAILED=$((STEPS_FAILED + 1))
+        fi
     done
 
-    # 5. Append a cycle entry to optimization_report.md
-    echo "[5/5] Append cycle entry"
+    # 5. Append a cycle entry
+    echo "[5/5] report"
     {
         echo ""
         echo "## Cycle ${ts}"
@@ -67,14 +89,22 @@ cycle() {
         echo "- Pulled latest from origin/main"
         echo "- Closed issues scanned: $(echo "${closed}" | grep -c . || echo 0)"
         echo "- Tools smoke-tested: ${#TOOLS[@]}"
+        echo "- Steps failed this cycle: ${STEPS_FAILED}"
         echo ""
     } >> "${REPORT_PATH}"
 
-    echo "Done. Sleeping ${CHECK_INTERVAL}s"
+    echo "Done. Failures this cycle: ${STEPS_FAILED}"
+    # Return non-zero if any step failed, but the outer loop ignores the code
+    # (the test agent never stops running).
+    [[ ${STEPS_FAILED} -eq 0 ]]
 }
 
 trap 'echo interrupted; exit 130' INT TERM
 while true; do
+    # `|| true` here is on the *cycle* return, not on individual commands —
+    # cycle() internally respects `set -e` and records failures via
+    # STEPS_FAILED.  The || true at the loop level exists solely because the
+    # spec is "never stop testing".
     cycle || true
     sleep "${CHECK_INTERVAL}"
 done
